@@ -34,7 +34,7 @@ $category_params = $category_filter ? [$date_from, $date_to, $category_filter] :
 $stmt = $db->query("
     SELECT 
         p.name,
-        p.price,
+        p.selling_price,
         c.name as category_name,
         c.color,
         SUM(oi.quantity) as total_sold,
@@ -147,7 +147,7 @@ $stmt = $db->query("SELECT id, name FROM categories WHERE active = 1 ORDER BY na
 $categories = $stmt->fetchAll();
 ?>
 
-<div class="container mx-auto px-4 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <!-- Header con filtri -->
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
         <h1 class="text-3xl font-bold text-gray-900">
@@ -155,21 +155,21 @@ $categories = $stmt->fetchAll();
         </h1>
         
         <!-- Filtri -->
-        <div class="flex flex-wrap gap-4">
-            <form method="GET" action="?route=report" class="flex flex-wrap gap-2 items-end">
+        <div class="flex flex-wrap gap-4 no-print">
+            <form method="GET" action="?route=report" class="flex flex-wrap gap-3 items-end">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Da</label>
                     <input type="date" name="date_from" value="<?= $date_from ?>" 
-                           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">A</label>
                     <input type="date" name="date_to" value="<?= $date_to ?>" 
-                           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Categoria</label>
-                    <select name="category" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    <select name="category" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="">Tutte</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?= $cat['id'] ?>" <?= $category_filter == $cat['id'] ? 'selected' : '' ?>>
@@ -180,13 +180,13 @@ $categories = $stmt->fetchAll();
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Periodo</label>
-                    <select name="period" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    <select name="period" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="day" <?= $period == 'day' ? 'selected' : '' ?>>Giornaliero</option>
                         <option value="week" <?= $period == 'week' ? 'selected' : '' ?>>Settimanale</option>
                         <option value="month" <?= $period == 'month' ? 'selected' : '' ?>>Mensile</option>
                     </select>
                 </div>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 text-sm">
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors text-sm">
                     <i class="fas fa-filter mr-1"></i>Filtra
                 </button>
             </form>
@@ -195,7 +195,7 @@ $categories = $stmt->fetchAll();
 
     <!-- Statistiche principali -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
                     <i class="fas fa-shopping-cart text-xl"></i>
@@ -208,7 +208,7 @@ $categories = $stmt->fetchAll();
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-green-100 text-green-600">
                     <i class="fas fa-euro-sign text-xl"></i>
@@ -220,7 +220,7 @@ $categories = $stmt->fetchAll();
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
                     <i class="fas fa-chart-line text-xl"></i>
@@ -232,7 +232,7 @@ $categories = $stmt->fetchAll();
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-red-100 text-red-600">
                     <i class="fas fa-exclamation-triangle text-xl"></i>
@@ -248,7 +248,7 @@ $categories = $stmt->fetchAll();
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Grafico trend vendite -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
                 <i class="fas fa-chart-area mr-2 text-primary"></i>Trend Vendite
             </h3>
@@ -258,7 +258,7 @@ $categories = $stmt->fetchAll();
         </div>
 
         <!-- Vendite per categoria -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
                 <i class="fas fa-chart-pie mr-2 text-primary"></i>Vendite per Categoria
             </h3>
@@ -270,7 +270,7 @@ $categories = $stmt->fetchAll();
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Prodotti più venduti -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-hidden ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900">
                     <i class="fas fa-trophy mr-2 text-yellow-500"></i>Top Prodotti
@@ -278,7 +278,7 @@ $categories = $stmt->fetchAll();
             </div>
             <div class="divide-y divide-gray-200">
                 <?php foreach (array_slice($top_products, 0, 5) as $index => $product): ?>
-                    <div class="px-6 py-4 flex items-center justify-between">
+                    <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-600">
                                 <?= $index + 1 ?>
@@ -301,7 +301,7 @@ $categories = $stmt->fetchAll();
         </div>
 
         <!-- Scorte basse -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-hidden ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900">
                     <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>Scorte Basse
@@ -309,7 +309,7 @@ $categories = $stmt->fetchAll();
             </div>
             <div class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
                 <?php if (empty($low_stock)): ?>
-                    <div class="px-6 py-4 text-center text-gray-500">
+                    <div class="px-6 py-6 text-center text-gray-600 bg-green-50">
                         <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
                         <p>Tutte le scorte sono sufficienti!</p>
                     </div>
@@ -336,7 +336,7 @@ $categories = $stmt->fetchAll();
         </div>
 
         <!-- Ordini recenti -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-hidden ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900">
                     <i class="fas fa-clock mr-2 text-blue-500"></i>Ordini Recenti
@@ -380,7 +380,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Azioni rapide -->
-    <div class="mt-8 bg-white rounded-lg shadow p-6">
+    <div class="mt-8 bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 no-print">
         <h3 class="text-lg font-medium text-gray-900 mb-4">
             <i class="fas fa-download mr-2 text-primary"></i>Esporta Report
         </h3>

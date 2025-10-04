@@ -3,6 +3,7 @@
  * Proiettore Ordini - OrdiGO
  * Visualizzazione in tempo reale per cucina/bar
  */
+require_once __DIR__ . '/../config/database.php';
 
 $db = Database::getInstance()->getConnection();
 
@@ -10,7 +11,7 @@ $db = Database::getInstance()->getConnection();
 function getRealtimeStats($db) {
     try {
         // Ordini oggi
-        $stmt = $db->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total FROM orders WHERE DATE(created_at) = DATE('now')");
+        $stmt = $db->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM orders WHERE DATE(created_at) = DATE('now')");
         $stmt->execute();
         $todayOrders = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -25,7 +26,7 @@ function getRealtimeStats($db) {
         $pendingOrders = $stmt->fetch(PDO::FETCH_ASSOC);
         
         // Ricavi mensili
-        $stmt = $db->prepare("SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')");
+        $stmt = $db->prepare("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')");
         $stmt->execute();
         $monthlyRevenue = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -49,12 +50,12 @@ function getRealtimeStats($db) {
 function getTopProducts($db, $limit = 5) {
     try {
         $stmt = $db->prepare("
-            SELECT p.name, p.price, COALESCE(SUM(oi.quantity), 0) as total_sold
+            SELECT p.name, p.selling_price, COALESCE(SUM(oi.quantity), 0) as total_sold
             FROM products p
             LEFT JOIN order_items oi ON p.id = oi.product_id
             LEFT JOIN orders o ON oi.order_id = o.id
             WHERE o.created_at >= date('now', '-30 days')
-            GROUP BY p.id, p.name, p.price
+            GROUP BY p.id, p.name, p.selling_price
             ORDER BY total_sold DESC
             LIMIT ?
         ");
@@ -69,7 +70,7 @@ function getTopProducts($db, $limit = 5) {
 function getRecentOrders($db, $limit = 10) {
     try {
         $stmt = $db->prepare("
-            SELECT id, customer_name, total, status, created_at
+            SELECT id, customer_name, total_amount, status, created_at
             FROM orders
             ORDER BY created_at DESC
             LIMIT ?
@@ -86,7 +87,7 @@ function getChartData($db) {
     try {
         // Vendite ultimi 7 giorni
         $stmt = $db->prepare("
-            SELECT DATE(created_at) as date, COUNT(*) as orders, COALESCE(SUM(total), 0) as revenue
+            SELECT DATE(created_at) as date, COUNT(*) as orders, COALESCE(SUM(total_amount), 0) as revenue
             FROM orders
             WHERE created_at >= date('now', '-7 days')
             GROUP BY DATE(created_at)
@@ -97,7 +98,7 @@ function getChartData($db) {
         
         // Vendite per categoria
         $stmt = $db->prepare("
-            SELECT c.name, c.color, COALESCE(SUM(oi.quantity * oi.price), 0) as revenue
+            SELECT c.name, c.color, COALESCE(SUM(oi.total_price), 0) as revenue
             FROM categories c
             LEFT JOIN products p ON c.id = p.category_id
             LEFT JOIN order_items oi ON p.id = oi.product_id
@@ -210,9 +211,9 @@ $chartData = getChartData($db);
         }
     </style>
 </head>
-<body class="min-h-screen p-4">
+<body class="min-h-screen p-4 text-gray-800">
     <!-- Header con logo e ora -->
-    <div class="projector-card rounded-2xl p-6 mb-6">
+    <div class="projector-card rounded-2xl p-6 mb-6 ring-1 ring-gray-200/60 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-xl">
@@ -237,7 +238,7 @@ $chartData = getChartData($db);
     <!-- Statistiche principali -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <!-- Ordini oggi -->
-        <div class="projector-card rounded-2xl p-6 text-center">
+        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
             <div class="bg-gradient-to-r from-green-400 to-green-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
                 <i class="fas fa-shopping-cart text-3xl"></i>
             </div>
@@ -249,7 +250,7 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Scorte basse -->
-        <div class="projector-card rounded-2xl p-6 text-center">
+        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
             <div class="bg-gradient-to-r from-red-400 to-red-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit pulse-animation">
                 <i class="fas fa-exclamation-triangle text-3xl"></i>
             </div>
@@ -259,7 +260,7 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Ordini in attesa -->
-        <div class="projector-card rounded-2xl p-6 text-center">
+        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
             <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
                 <i class="fas fa-clock text-3xl"></i>
             </div>
@@ -269,7 +270,7 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Ricavi mensili -->
-        <div class="projector-card rounded-2xl p-6 text-center">
+        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
             <div class="bg-gradient-to-r from-blue-400 to-blue-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
                 <i class="fas fa-euro-sign text-3xl"></i>
             </div>
@@ -282,7 +283,7 @@ $chartData = getChartData($db);
     <!-- Grafici e dati -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Grafico vendite giornaliere -->
-        <div class="projector-card rounded-2xl p-6">
+        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-chart-line text-blue-500 mr-3"></i>
                 Vendite Ultimi 7 Giorni
@@ -293,7 +294,7 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Grafico vendite per categoria -->
-        <div class="projector-card rounded-2xl p-6">
+        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-chart-pie text-purple-500 mr-3"></i>
                 Vendite per Categoria
@@ -307,21 +308,21 @@ $chartData = getChartData($db);
     <!-- Prodotti più venduti e ordini recenti -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Prodotti più venduti -->
-        <div class="projector-card rounded-2xl p-6">
+        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-trophy text-yellow-500 mr-3"></i>
                 Top Prodotti (30gg)
             </h3>
             <div class="space-y-3">
                 <?php foreach ($topProducts as $index => $product): ?>
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg ring-1 ring-gray-200 hover:bg-gray-100 transition">
                     <div class="flex items-center space-x-3">
                         <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
                             <?= $index + 1 ?>
                         </div>
                         <div>
                             <div class="font-semibold text-gray-800"><?= htmlspecialchars($product['name']) ?></div>
-                            <div class="text-sm text-gray-600">€<?= number_format($product['price'], 2) ?></div>
+                            <div class="text-sm text-gray-600">€<?= number_format($product['selling_price'] ?? 0, 2) ?></div>
                         </div>
                     </div>
                     <div class="text-right">
@@ -334,14 +335,14 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Ordini recenti -->
-        <div class="projector-card rounded-2xl p-6">
+        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-list text-green-500 mr-3"></i>
                 Ordini Recenti
             </h3>
             <div class="space-y-2 max-h-80 overflow-y-auto">
                 <?php foreach ($recentOrders as $order): ?>
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg ring-1 ring-gray-200 hover:bg-gray-100 transition">
                     <div class="flex items-center space-x-3">
                         <div class="status-indicator status-<?= $order['status'] ?>"></div>
                         <div>
@@ -350,7 +351,7 @@ $chartData = getChartData($db);
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="font-bold text-green-600">€<?= number_format($order['total'], 2) ?></div>
+                        <div class="font-bold text-green-600">€<?= number_format($order['total_amount'], 2) ?></div>
                         <div class="text-xs text-gray-500"><?= date('H:i', strtotime($order['created_at'])) ?></div>
                     </div>
                 </div>
@@ -360,7 +361,7 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Ticker informazioni -->
-    <div class="projector-card rounded-2xl p-4 overflow-hidden">
+    <div class="projector-card rounded-2xl p-4 overflow-hidden ring-1 ring-gray-200/60 shadow-lg">
         <div class="ticker text-lg font-semibold text-gray-700">
             <span class="mr-8">📊 Dashboard aggiornata in tempo reale</span>
             <span class="mr-8">🔄 Sincronizzazione automatica ogni 30 secondi</span>

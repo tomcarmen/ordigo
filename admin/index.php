@@ -1,8 +1,38 @@
 <?php
+// Abilita output buffering per consentire header() anche dopo contenuti inclusi
+if (!headers_sent()) { @ob_start(); }
 // Il database è già incluso dal file index.php principale
 
 $db = Database::getInstance();
 $page = $_GET['page'] ?? 'dashboard';
+
+// Endpoint JSON per aggiornare scorte basse in tempo reale
+if (($page === 'dashboard') && (isset($_GET['ajax']) && $_GET['ajax'] === 'low_stock')) {
+    header('Content-Type: application/json; charset=utf-8');
+    // Conteggio scorte basse
+    $lowStockCount = $db->query("SELECT COUNT(*) as count FROM products WHERE stock_quantity <= min_stock_level AND active = 1")->fetch()['count'];
+    // Elenco prodotti con scorte basse
+    $lowStockProducts = $db->query("
+        SELECT p.id, p.name, p.stock_quantity, p.min_stock_level, c.name as category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.stock_quantity <= p.min_stock_level AND p.active = 1
+        ORDER BY p.stock_quantity ASC
+    ")->fetchAll();
+    echo json_encode([
+        'count' => (int)$lowStockCount,
+        'products' => array_map(function($p) {
+            return [
+                'id' => (int)$p['id'],
+                'name' => $p['name'],
+                'category_name' => $p['category_name'] ?? 'Nessuna',
+                'stock_quantity' => (int)$p['stock_quantity'],
+                'min_stock_level' => (int)$p['min_stock_level'],
+            ];
+        }, $lowStockProducts)
+    ]);
+    exit;
+}
 
 // Statistiche per dashboard
 $stats = [];
@@ -17,42 +47,66 @@ if ($page === 'dashboard') {
 // I template sono già inclusi dal file index.php principale
 ?>
 
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Header Admin -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Pannello Amministrazione</h1>
-                        <p class="mt-1 text-sm text-gray-600">Gestisci prodotti, categorie e monitora le vendite</p>
-                    </div>
-                    <div class="flex space-x-3">
-                        <a href="?route=admin&page=products&action=add" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                            <i class="fas fa-plus mr-2"></i>Nuovo Prodotto
-                        </a>
-                        <a href="?route=admin&page=categories&action=add" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                            <i class="fas fa-tag mr-2"></i>Nuova Categoria
-                        </a>
-                    </div>
+<div class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: false }">
+    <!-- Layout Admin TailAdmin-like -->
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="hidden md:block w-64 bg-white ring-1 ring-gray-200/60 shadow-sm min-h-screen">
+            <div class="p-4 border-b">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center"><i class="fas fa-cog"></i></div>
+                    <span class="font-semibold text-gray-800">Admin OrdiGO</span>
                 </div>
             </div>
-        </div>
-
-        <!-- Menu Navigazione Admin -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <nav class="flex space-x-8 px-6 py-3">
-                <a href="?route=admin&page=dashboard" class="<?= $page === 'dashboard' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700' ?> py-2 px-1 border-b-2 border-transparent font-medium text-sm">
-                    <i class="fas fa-chart-line mr-2"></i>Dashboard
+            <nav class="p-2 space-y-1">
+                <a href="?route=admin&page=dashboard" class="flex items-center px-3 py-2 rounded-md <?= $page === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                    <i class="fas fa-chart-line mr-3"></i><span>Dashboard</span>
                 </a>
-                <a href="?route=admin&page=products" class="<?= $page === 'products' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700' ?> py-2 px-1 border-b-2 border-transparent font-medium text-sm">
-                    <i class="fas fa-box mr-2"></i>Prodotti
+                <a href="?route=admin&page=products" class="flex items-center px-3 py-2 rounded-md <?= $page === 'products' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                    <i class="fas fa-box mr-3"></i><span>Prodotti</span>
                 </a>
-                <a href="?route=admin&page=categories" class="<?= $page === 'categories' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700' ?> py-2 px-1 border-b-2 border-transparent font-medium text-sm">
-                    <i class="fas fa-tags mr-2"></i>Categorie
+                <a href="?route=admin&page=categories" class="flex items-center px-3 py-2 rounded-md <?= $page === 'categories' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                    <i class="fas fa-tags mr-3"></i><span>Categorie</span>
+                </a>
+                <a href="?route=report" class="flex items-center px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-chart-bar mr-3"></i><span>Report</span>
                 </a>
             </nav>
-        </div>
+        </aside>
+
+        <!-- Content -->
+        <div class="flex-1">
+            <!-- Topbar -->
+            <div class="bg-white ring-1 ring-gray-200/60 shadow-sm">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <button class="md:hidden inline-flex items-center px-2 py-1 rounded hover:bg-gray-100" @click="sidebarOpen = !sidebarOpen"><i class="fas fa-bars"></i></button>
+                        <h1 class="text-xl font-semibold text-gray-900">Pannello Amministrazione</h1>
+                    </div>
+                    <!-- Pulsanti rapidi rimossi per evitare duplicazioni -->
+                </div>
+            </div>
+
+            <!-- Mobile sidebar -->
+            <div class="md:hidden" x-show="sidebarOpen" x-transition>
+                <nav class="bg-white ring-1 ring-gray-200/60 shadow-sm p-2 space-y-1">
+                    <a href="?route=admin&page=dashboard" class="block px-3 py-2 rounded-md <?= $page === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                        <i class="fas fa-chart-line mr-2"></i>Dashboard
+                    </a>
+                    <a href="?route=admin&page=products" class="block px-3 py-2 rounded-md <?= $page === 'products' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                        <i class="fas fa-box mr-2"></i>Prodotti
+                    </a>
+                    <a href="?route=admin&page=categories" class="block px-3 py-2 rounded-md <?= $page === 'categories' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
+                        <i class="fas fa-tags mr-2"></i>Categorie
+                    </a>
+                    <a href="?route=report" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-chart-bar mr-2"></i>Report
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Main content -->
+            <div class="p-4">
 
         <?php if ($page === 'dashboard'): ?>
             <!-- Dashboard -->
@@ -107,7 +161,7 @@ if ($page === 'dashboard') {
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Scorte Basse</dt>
-                                    <dd class="text-lg font-medium text-gray-900"><?= $stats['low_stock'] ?></dd>
+                                    <dd id="low-stock-count" class="text-lg font-medium text-gray-900"><?= $stats['low_stock'] ?></dd>
                                 </dl>
                             </div>
                         </div>
@@ -142,23 +196,13 @@ if ($page === 'dashboard') {
                 </div>
             </div>
 
-            <!-- Prodotti con Scorte Basse -->
-            <?php if ($stats['low_stock'] > 0): ?>
-            <div class="bg-white shadow rounded-lg">
+            <!-- Prodotti con Scorte Basse (aggiornato in tempo reale) -->
+            <div id="low-stock-section" class="bg-white shadow rounded-lg" style="display: <?= $stats['low_stock'] > 0 ? 'block' : 'none' ?>;">
                 <div class="px-4 py-5 sm:p-6">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                         <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
                         Prodotti con Scorte Basse
                     </h3>
-                    <?php
-                    $lowStockProducts = $db->query("
-                        SELECT p.*, c.name as category_name 
-                        FROM products p 
-                        LEFT JOIN categories c ON p.category_id = c.id 
-                        WHERE p.stock_quantity <= p.min_stock_level AND p.active = 1
-                        ORDER BY p.stock_quantity ASC
-                    ")->fetchAll();
-                    ?>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -170,36 +214,85 @@ if ($page === 'dashboard') {
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($lowStockProducts as $product): ?>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($product['name']) ?></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            <?= htmlspecialchars($product['category_name'] ?? 'Nessuna') ?>
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="text-sm font-medium text-red-600"><?= $product['stock_quantity'] ?></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="text-sm text-gray-500"><?= $product['min_stock_level'] ?></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="?route=admin&page=products&action=edit&id=<?= $product['id'] ?>" class="text-blue-600 hover:text-blue-900">
-                                            <i class="fas fa-edit mr-1"></i>Modifica
-                                        </a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
+                            <tbody id="low-stock-list" class="bg-white divide-y divide-gray-200">
+                                <!-- Popolato via JavaScript -->
                             </tbody>
                         </table>
                     </div>
+                    <div id="low-stock-empty" class="text-sm text-gray-500" style="display: none;">
+                        Nessun prodotto con scorte basse al momento.
+                    </div>
                 </div>
             </div>
-            <?php endif; ?>
+            
+            <script>
+            (function() {
+                function renderLowStock(data) {
+                    var countEl = document.getElementById('low-stock-count');
+                    var sectionEl = document.getElementById('low-stock-section');
+                    var listEl = document.getElementById('low-stock-list');
+                    var emptyEl = document.getElementById('low-stock-empty');
+                    if (!countEl || !sectionEl || !listEl || !emptyEl) return;
+
+                    // Aggiorna contatore
+                    countEl.textContent = data.count || 0;
+
+                    // Mostra/Nasconde la sezione
+                    if (data.count > 0) {
+                        sectionEl.style.display = 'block';
+                        emptyEl.style.display = 'none';
+                    } else {
+                        sectionEl.style.display = 'none';
+                        emptyEl.style.display = 'block';
+                    }
+
+                    // Popola la lista
+                    listEl.innerHTML = '';
+                    (data.products || []).forEach(function(p) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' +
+                                '<div class="text-sm font-medium text-gray-900">' + escapeHtml(p.name) + '</div>' +
+                            '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' +
+                                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + escapeHtml(p.category_name || 'Nessuna') + '</span>' +
+                            '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' +
+                                '<span class="text-sm font-medium text-red-600">' + p.stock_quantity + '</span>' +
+                            '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' +
+                                '<span class="text-sm text-gray-500">' + p.min_stock_level + '</span>' +
+                            '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
+                                '<a href="?route=admin&page=products&action=edit&id=' + p.id + '" class="text-blue-600 hover:text-blue-900">' +
+                                    '<i class="fas fa-edit mr-1"></i>Modifica' +
+                                '</a>' +
+                            '</td>';
+                        listEl.appendChild(tr);
+                    });
+                }
+
+                function escapeHtml(str) {
+                    var div = document.createElement('div');
+                    div.appendChild(document.createTextNode(str));
+                    return div.innerHTML;
+                }
+
+                function fetchLowStock() {
+                    var url = '?route=admin&page=dashboard&ajax=low_stock';
+                    fetch(url, { headers: { 'Accept': 'application/json' } })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) { renderLowStock(data); })
+                        .catch(function(err) { /* silenzioso */ });
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Prima fetch immediata, poi ogni 10 secondi
+                    fetchLowStock();
+                    setInterval(fetchLowStock, 10000);
+                });
+            })();
+            </script>
 
         <?php elseif ($page === 'products'): ?>
             <?php include 'products.php'; ?>
@@ -208,5 +301,7 @@ if ($page === 'dashboard') {
             <?php include 'categories.php'; ?>
         
         <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>

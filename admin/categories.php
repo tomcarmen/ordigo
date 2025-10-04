@@ -98,25 +98,25 @@ if ($action === 'edit' && isset($_GET['id'])) {
         <h1 class="text-3xl font-bold text-gray-900">
             <i class="fas fa-tags mr-3 text-primary"></i>Gestione Categorie
         </h1>
-        <button onclick="openModal('addCategoryModal')" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+        <button onclick="openModal('addCategoryModal')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow-sm ring-1 ring-inset ring-green-500/30 transition-colors duration-150">
             <i class="fas fa-plus mr-2"></i>Nuova Categoria
         </button>
     </div>
 
     <!-- Messaggi -->
     <?php if ($message): ?>
-        <div class="mb-4 bg-green-50 border-l-4 border-green-400 p-4">
+        <div class="mb-4 bg-green-50 ring-1 ring-inset ring-green-200 p-4 rounded-md shadow-sm" role="status" aria-live="polite" aria-atomic="true">
             <div class="flex">
-                <i class="fas fa-check-circle text-green-400 mr-3 mt-1"></i>
+                <i class="fas fa-check-circle text-green-400 mr-3 mt-1" aria-hidden="true"></i>
                 <p class="text-green-700"><?= htmlspecialchars($message) ?></p>
             </div>
         </div>
     <?php endif; ?>
 
     <?php if ($error): ?>
-        <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+        <div class="mb-4 bg-red-50 ring-1 ring-inset ring-red-200 p-4 rounded-md shadow-sm" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="flex">
-                <i class="fas fa-exclamation-triangle text-red-400 mr-3 mt-1"></i>
+                <i class="fas fa-exclamation-triangle text-red-400 mr-3 mt-1" aria-hidden="true"></i>
                 <p class="text-red-700"><?= htmlspecialchars($error) ?></p>
             </div>
         </div>
@@ -124,7 +124,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
 
     <!-- Statistiche rapide -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200/60 p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
                     <i class="fas fa-tags text-xl"></i>
@@ -136,7 +136,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200/60 p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-green-100 text-green-600">
                     <i class="fas fa-check-circle text-xl"></i>
@@ -148,7 +148,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200/60 p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
                     <i class="fas fa-box text-xl"></i>
@@ -160,7 +160,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200/60 p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-purple-100 text-purple-600">
                     <i class="fas fa-chart-pie text-xl"></i>
@@ -174,8 +174,8 @@ if ($action === 'edit' && isset($_GET['id'])) {
     </div>
 
     <!-- Tabella categorie -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
+    <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200/60 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 ring-1 ring-inset ring-gray-100">
             <h3 class="text-lg font-medium text-gray-900">Elenco Categorie</h3>
         </div>
         
@@ -193,7 +193,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php foreach ($categories as $category): ?>
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-4 h-4 rounded-full mr-3" style="background-color: <?= htmlspecialchars($category['color_hex'] ?? '#3B82F6') ?>"></div>
@@ -206,7 +206,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white" style="background-color: <?= htmlspecialchars($category['color_hex'] ?? '#3B82F6') ?>">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white ring-1 ring-black/10 shadow-sm" style="background-color: <?= htmlspecialchars($category['color_hex'] ?? '#3B82F6') ?>">
                                     <?= htmlspecialchars($category['color_hex'] ?? '#3B82F6') ?>
                                 </span>
                             </td>
@@ -216,11 +216,11 @@ if ($action === 'edit' && isset($_GET['id'])) {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <?php if ($category['active']): ?>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 ring-1 ring-inset ring-green-200">
                                         <i class="fas fa-check-circle mr-1"></i>Attiva
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-inset ring-red-200">
                                         <i class="fas fa-times-circle mr-1"></i>Inattiva
                                     </span>
                                 <?php endif; ?>
@@ -230,17 +230,17 @@ if ($action === 'edit' && isset($_GET['id'])) {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <a href="?route=admin&page=categories&action=edit&id=<?= $category['id'] ?>"
-                                   class="text-primary hover:text-blue-600 mr-3">
+                                   class="inline-flex items-center p-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 mr-3 ring-1 ring-inset ring-blue-200 transition-colors duration-150">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <?php if ($category['active_products'] == 0): ?>
                 <a href="?route=admin&page=categories&action=delete&id=<?= $category['id'] ?>"
                                        onclick="return confirm('Sei sicuro di voler eliminare questa categoria?')"
-                                       class="text-red-600 hover:text-red-900">
+                                       class="inline-flex items-center p-2 rounded-md bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-inset ring-red-200 transition-colors duration-150">
                                         <i class="fas fa-trash"></i>
                                     </a>
                                 <?php else: ?>
-                                    <span class="text-gray-400" title="Impossibile eliminare: categoria con prodotti attivi associati">
+                                    <span class="inline-flex items-center p-2 rounded-md bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-200 transition-colors duration-150" title="Impossibile eliminare: categoria con prodotti attivi associati">
                                         <i class="fas fa-trash"></i>
                                     </span>
                                 <?php endif; ?>
@@ -254,14 +254,14 @@ if ($action === 'edit' && isset($_GET['id'])) {
 </div>
 
 <!-- Modal Aggiungi Categoria -->
-<div id="addCategoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+<div id="addCategoryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50" role="dialog" aria-modal="true" aria-labelledby="addCategoryTitle">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
             <form method="POST" action="?route=admin&page=categories&action=add">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <h3 id="addCategoryTitle" class="text-lg leading-6 font-medium text-gray-900 mb-4">
                                 <i class="fas fa-plus-circle mr-2 text-primary"></i>Aggiungi Nuova Categoria
                             </h3>
                             
@@ -269,28 +269,28 @@ if ($action === 'edit' && isset($_GET['id'])) {
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome Categoria *</label>
                                     <input type="text" name="name" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                           class="w-full px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Colore</label>
                                     <div class="flex items-center space-x-2">
                                         <input type="color" name="color_hex" value="#3B82F6" 
-                                               class="w-12 h-10 border border-gray-300 rounded cursor-pointer">
+                                               class="w-12 h-10 rounded cursor-pointer shadow-sm ring-1 ring-inset ring-gray-300">
                                         <input type="text" name="color_hex_text" value="#3B82F6" 
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                               class="flex-1 px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     </div>
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
                                     <textarea name="description" rows="3" 
-                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                                              class="w-full px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                                 </div>
                                 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="active" checked 
-                                           class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                           class="h-4 w-4 text-primary focus:ring-primary ring-1 ring-inset ring-gray-300 rounded">
                                     <label class="ml-2 block text-sm text-gray-900">Categoria attiva</label>
                                 </div>
                             </div>
@@ -298,10 +298,10 @@ if ($action === 'edit' && isset($_GET['id'])) {
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 sm:ml-3 sm:w-auto sm:text-sm">
                         <i class="fas fa-save mr-2"></i>Salva Categoria
                     </button>
-                    <button type="button" onclick="closeModal('addCategoryModal')" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="button" onclick="closeModal('addCategoryModal')" class="mt-3 w-full inline-flex justify-center rounded-md ring-1 ring-inset ring-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                         Annulla
                     </button>
                 </div>
@@ -312,15 +312,15 @@ if ($action === 'edit' && isset($_GET['id'])) {
 
 <?php if ($edit_category): ?>
 <!-- Modal Modifica Categoria -->
-<div id="editCategoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
+<div id="editCategoryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50" role="dialog" aria-modal="true" aria-labelledby="editCategoryTitle">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
             <form method="POST" action="?route=admin&page=categories&action=edit">
                 <input type="hidden" name="id" value="<?= $edit_category['id'] ?>">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <h3 id="editCategoryTitle" class="text-lg leading-6 font-medium text-gray-900 mb-4">
                                 <i class="fas fa-edit mr-2 text-primary"></i>Modifica Categoria
                             </h3>
                             
@@ -328,28 +328,28 @@ if ($action === 'edit' && isset($_GET['id'])) {
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome Categoria *</label>
                                     <input type="text" name="name" value="<?= htmlspecialchars($edit_category['name']) ?>" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                           class="w-full px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Colore</label>
                                     <div class="flex items-center space-x-2">
                                         <input type="color" name="color_hex" value="<?= htmlspecialchars($edit_category['color'] ?? '#3B82F6') ?>" 
-                                               class="w-12 h-10 border border-gray-300 rounded cursor-pointer">
+                                               class="w-12 h-10 rounded cursor-pointer shadow-sm ring-1 ring-inset ring-gray-300">
                                         <input type="text" name="color_hex_text" value="<?= htmlspecialchars($edit_category['color'] ?? '#3B82F6') ?>" 
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                               class="flex-1 px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     </div>
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
                                     <textarea name="description" rows="3" 
-                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"><?= htmlspecialchars($edit_category['description'] ?? '') ?></textarea>
+                                              class="w-full px-3 py-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"><?= htmlspecialchars($edit_category['description'] ?? '') ?></textarea>
                                 </div>
                                 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="active" <?= $edit_category['active'] ? 'checked' : '' ?> 
-                                           class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                           class="h-4 w-4 text-primary focus:ring-primary ring-1 ring-inset ring-gray-300 rounded">
                                     <label class="ml-2 block text-sm text-gray-900">Categoria attiva</label>
                                 </div>
                             </div>
@@ -357,10 +357,10 @@ if ($action === 'edit' && isset($_GET['id'])) {
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 sm:ml-3 sm:w-auto sm:text-sm">
                         <i class="fas fa-save mr-2"></i>Aggiorna Categoria
                     </button>
-                <a href="?route=admin&page=categories" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                <a href="?route=admin&page=categories" class="mt-3 w-full inline-flex justify-center rounded-md ring-1 ring-inset ring-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                         Annulla
                     </a>
                 </div>
@@ -371,6 +371,15 @@ if ($action === 'edit' && isset($_GET['id'])) {
 <?php endif; ?>
 
 <script>
+// Auto-apertura Add Category modal da query string
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('openModal') === 'addCategory') {
+    try {
+      setTimeout(() => openModal('addCategoryModal'), 0);
+    } catch (e) {}
+  }
+})();
 // Sincronizzazione color picker
 document.addEventListener('DOMContentLoaded', function() {
     const colorInputs = document.querySelectorAll('input[type="color"]');
@@ -389,11 +398,116 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+const focusableSelectors = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+let modalTriggerElement = null;
+const modalKeydownHandlers = {};
+
+function trapFocus(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  const focusable = modal.querySelectorAll(focusableSelectors);
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  const handler = function(e) {
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    } else if (e.key === 'Escape') {
+      closeModal(modalId);
+    }
+  };
+
+  modal.addEventListener('keydown', handler);
+  modalKeydownHandlers[modalId] = handler;
+  if (first) first.focus();
+}
+
 function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modalTriggerElement = document.activeElement;
+    modal.classList.remove('hidden');
+    trapFocus(modalId);
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    const handler = modalKeydownHandlers[modalId];
+    if (handler) {
+      modal.removeEventListener('keydown', handler);
+      delete modalKeydownHandlers[modalId];
+    }
+    if (modalTriggerElement && typeof modalTriggerElement.focus === 'function') {
+      modalTriggerElement.focus();
+    }
+    modalTriggerElement = null;
 }
+</script>
+<script>
+// Accessibilità modali: focus trap e chiusura con ESC
+document.addEventListener('DOMContentLoaded', () => {
+  const modals = ['addCategoryModal', 'editCategoryModal'];
+  const focusableSelectors = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    const focusable = modal.querySelectorAll(focusableSelectors);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    function handleKeyDown(e) {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        closeModal(modalId);
+      }
+    }
+
+    modal.addEventListener('keydown', handleKeyDown);
+    // Sposta il focus sul primo elemento utile
+    if (first) first.focus();
+  }
+
+  // Estendi openModal per attivare focus trap
+  window.openModal = function(modalId) {
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    el.classList.remove('hidden');
+    trapFocus(modalId);
+  };
+
+  // Chiudi con click sul backdrop
+  modals.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', (e) => {
+      if (e.target === el) {
+        closeModal(id);
+      }
+    });
+  });
+});
 </script>

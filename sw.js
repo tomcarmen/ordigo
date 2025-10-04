@@ -3,22 +3,16 @@
  * Gestione cache e funzionalità offline
  */
 
-const CACHE_NAME = 'ordigo-v1.0.0';
-const STATIC_CACHE = 'ordigo-static-v1.0.0';
-const DYNAMIC_CACHE = 'ordigo-dynamic-v1.0.0';
+const CACHE_NAME = 'ordigo-v1.0.1';
+const STATIC_CACHE = 'ordigo-static-v1.0.1';
+const DYNAMIC_CACHE = 'ordigo-dynamic-v1.0.1';
 
 // File da cachare immediatamente
 const STATIC_FILES = [
-    '/',
-    '/index.php',
-    '/templates/header.php',
-    '/templates/footer.php',
-    '/pages/home.php',
-    '/admin/index.php',
-    '/admin/products.php',
-    '/admin/categories.php',
-    '/admin/reports.php',
-    '/config/database.php',
+    // Solo risorse veramente statiche
+    '/manifest.json',
+    '/icons/icon-192x192.svg',
+    '/js/offline.js',
     'https://cdn.tailwindcss.com',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
@@ -81,6 +75,12 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // Evita di cacheare pagine PHP dinamiche: preferisci rete
+    if (request.url.includes('.php')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
     // Strategia Cache First per file statici
     if (isStaticFile(request.url)) {
         event.respondWith(cacheFirst(request));

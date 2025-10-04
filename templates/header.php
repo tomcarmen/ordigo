@@ -25,6 +25,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#667eea">
     <script src="js/offline.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
         .connection-status {
@@ -74,9 +75,9 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen text-gray-800">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg border-b-4 border-primary">
+    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -86,16 +87,13 @@
                         </h1>
                     </div>
                     <div class="hidden md:ml-6 md:flex md:space-x-8">
-                        <a href="?route=home" class="<?= ($route == 'home') ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="?route=home" class="<?= ($route == 'home') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
                             <i class="fas fa-home mr-2"></i>Home
                         </a>
-                        <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
                             <i class="fas fa-cog mr-2"></i>Admin
                         </a>
-                        <a href="?route=report" class="<?= ($route == 'report') ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-chart-bar mr-2"></i>Report
-                        </a>
-                        <a href="admin/projector.php" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" target="_blank">
+                        <a href="admin/projector.php" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors" target="_blank">
                             <i class="fas fa-tv mr-2"></i>Dashboard Proiettore
                         </a>
                     </div>
@@ -114,21 +112,24 @@
                         <i class="fas fa-sync-alt text-gray-400 mr-2"></i>
                         <span class="text-gray-600">Sincronizzato</span>
                     </div>
+
+                    <!-- Mobile menu button -->
+                    <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary" aria-controls="mobile-menu" aria-expanded="false" data-mobile-menu>
+                        <span class="sr-only">Apri menu</span>
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
                 </div>
             </div>
         </div>
         
         <!-- Mobile menu -->
         <div class="md:hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50">
-                <a href="?route=home" class="<?= ($route == 'home') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-200' ?> block px-3 py-2 rounded-md text-base font-medium">
+            <div class="hidden px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/80 backdrop-blur ring-1 ring-gray-200/60 rounded-b-lg shadow-sm">
+                <a href="?route=home" class="<?= ($route == 'home') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-home mr-2"></i>Home
                 </a>
-                <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-200' ?> block px-3 py-2 rounded-md text-base font-medium">
+                <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-cog mr-2"></i>Admin
-                </a>
-                <a href="?route=report" class="<?= ($route == 'report') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-200' ?> block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-chart-bar mr-2"></i>Report
                 </a>
             </div>
         </div>
@@ -138,7 +139,7 @@
     <div id="connection-status" class="connection-status online">Online</div>
 
     <!-- Main content -->
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main class="<?= ($route == 'admin') ? 'py-6 px-4' : 'max-w-7xl mx-auto py-6 sm:px-6 lg:px-8' ?>">
         <!-- Alert per scorte basse -->
         <?php
         try {

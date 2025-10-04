@@ -40,6 +40,7 @@ class Database {
             // Crea tabelle se non esistono
             $this->createTables();
             $this->insertDefaultData();
+            $this->migrateSchema();
             
         } catch (PDOException $e) {
             die('Errore connessione database: ' . $e->getMessage());
@@ -81,28 +82,16 @@ class Database {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER NOT NULL,
             name VARCHAR(100) NOT NULL,
-            price DECIMAL(10,2) NOT NULL DEFAULT 0,
+            purchase_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+            selling_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+            stock_quantity INTEGER DEFAULT 0,
+            min_stock_level INTEGER DEFAULT 5,
             active BOOLEAN DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         );
 
-        -- Tabella offerte stock
-        CREATE TABLE IF NOT EXISTS stock_offers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            title VARCHAR(200) NOT NULL,
-            description TEXT,
-            discount_type TEXT CHECK(discount_type IN ('percentage', 'fixed')) DEFAULT 'percentage',
-            discount_value DECIMAL(10,2) NOT NULL,
-            min_quantity INTEGER DEFAULT 1,
-            max_quantity INTEGER,
-            start_date DATETIME,
-            end_date DATETIME,
-            active BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-        );
+        -- Tabella offerte stock rimossa su richiesta
 
         -- Tabella ordini
         CREATE TABLE IF NOT EXISTS orders (
@@ -156,6 +145,94 @@ class Database {
         ";
         
         $this->pdo->exec($sql);
+    }
+    
+    private function migrateSchema() {
+        // Migrazione schema prodotti: rinomina price -> purchase_price, aggiunge selling_price
+        try {
+            // Rimuovi tabella stock_offers se presente
+            try {
+                $this->pdo->exec("DROP TABLE IF EXISTS stock_offers");
+            } catch (Exception $e) {
+                error_log('Drop stock_offers fallito: ' . $e->getMessage());
+            }
+            // Leggi colonne esistenti
+            $stmt = $this->pdo->query("PRAGMA table_info(products)");
+            $columns = $stmt->fetchAll();
+            $colNames = array_map(function($c){ return $c['name']; }, $columns);
+
+            $hasPrice = in_array('price', $colNames);
+            $hasPurchasePrice = in_array('purchase_price', $colNames);
+            $hasSellingPrice = in_array('selling_price', $colNames);
+
+            // Rinomina price -> purchase_price se necessario
+            if ($hasPrice && !$hasPurchasePrice) {
+                $this->pdo->exec("ALTER TABLE products RENAME COLUMN price TO purchase_price");
+                // Aggiorna lista colonne dopo rinomina
+                $stmt = $this->pdo->query("PRAGMA table_info(products)");
+                $columns = $stmt->fetchAll();
+                $colNames = array_map(function($c){ return $c['name']; }, $columns);
+                $hasPurchasePrice = in_array('purchase_price', $colNames);
+            }
+
+            // Aggiungi selling_price se mancante
+            if (!$hasSellingPrice) {
+                $this->pdo->exec("ALTER TABLE products ADD COLUMN selling_price DECIMAL(10,2) DEFAULT 0");
+            }
+
+            // Inizializza selling_price = purchase_price se è 0 o NULL
+            if (in_array('purchase_price', $colNames)) {
+                $this->pdo->exec("UPDATE products SET selling_price = purchase_price WHERE selling_price IS NULL OR selling_price = 0");
+            }
+        } catch (Exception $e) {
+            // Log senza interrompere
+            error_log('Migrazione schema prodotti fallita: ' . $e->getMessage());
+        }
+        
+        // Migrazione schema extras: rinomina price -> purchase_price, aggiunge selling_price, stock e min_stock
+        try {
+            $stmt = $this->pdo->query("PRAGMA table_info(product_extras)");
+            $columns = $stmt->fetchAll();
+            $colNames = array_map(function($c){ return $c['name']; }, $columns);
+
+            $hasPrice = in_array('price', $colNames);
+            $hasPurchasePrice = in_array('purchase_price', $colNames);
+            $hasSellingPrice = in_array('selling_price', $colNames);
+            $hasStockQty = in_array('stock_quantity', $colNames);
+            $hasMinStock = in_array('min_stock_level', $colNames);
+
+            // Rinomina price -> purchase_price se necessario
+            if ($hasPrice && !$hasPurchasePrice) {
+                $this->pdo->exec("ALTER TABLE product_extras RENAME COLUMN price TO purchase_price");
+                // ricarica colonne
+                $stmt = $this->pdo->query("PRAGMA table_info(product_extras)");
+                $columns = $stmt->fetchAll();
+                $colNames = array_map(function($c){ return $c['name']; }, $columns);
+                $hasPurchasePrice = in_array('purchase_price', $colNames);
+            }
+
+            // Aggiungi selling_price se mancante
+            if (!$hasSellingPrice) {
+                $this->pdo->exec("ALTER TABLE product_extras ADD COLUMN selling_price DECIMAL(10,2) DEFAULT 0");
+            }
+
+            // Aggiungi stock_quantity se mancante
+            if (!$hasStockQty) {
+                $this->pdo->exec("ALTER TABLE product_extras ADD COLUMN stock_quantity INTEGER DEFAULT 0");
+            }
+
+            // Aggiungi min_stock_level se mancante
+            if (!$hasMinStock) {
+                $this->pdo->exec("ALTER TABLE product_extras ADD COLUMN min_stock_level INTEGER DEFAULT 5");
+            }
+
+            // Inizializza selling_price = purchase_price se mancante/zero
+            if (in_array('purchase_price', $colNames)) {
+                $this->pdo->exec("UPDATE product_extras SET selling_price = purchase_price WHERE selling_price IS NULL OR selling_price = 0");
+            }
+        } catch (Exception $e) {
+            error_log('Migrazione schema extras fallita: ' . $e->getMessage());
+        }
     }
     
     private function insertDefaultData() {

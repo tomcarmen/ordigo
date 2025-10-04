@@ -1,0 +1,14 @@
+# Dipendenze
+node_modules/
+
+# File e archivi locali
+ordigo.7z
+
+# Dati runtime / sensibili
+uploads/
+database/
+database/*.db
+
+# Cache e log
+*.log
+*.cache

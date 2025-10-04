@@ -1,16 +1,33 @@
 </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-12">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center">
-                <div class="text-sm text-gray-500">
-                    <p>&copy; 2024 OrdiGO - Sistema di gestione ordini per Festa Oratorio</p>
+    <footer class="bg-gray-900 text-gray-300 mt-12 ring-1 ring-gray-800/60">
+        <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-white">OrdiGO</h3>
+                    <p class="mt-3 text-sm">Sistema di gestione ordini per la Festa dell'Oratorio. Veloce, moderno e pronto all'uso.</p>
                 </div>
-                <div class="flex items-center space-x-4 text-sm text-gray-500">
-                    <span>Versione 1.0</span>
-                    <span>•</span>
-                    <span id="last-sync">Ultimo sync: <?= date('H:i:s') ?></span>
+                <div>
+                    <h3 class="text-lg font-semibold text-white">Navigazione</h3>
+                    <ul class="mt-3 space-y-2 text-sm">
+                        <li><a class="hover:text-white" href="?route=home"><i class="fas fa-home mr-2"></i>Home</a></li>
+                        <li><a class="hover:text-white" href="?route=admin&page=products"><i class="fas fa-cog mr-2"></i>Admin</a></li>
+                        <li><a class="hover:text-white" href="?route=report"><i class="fas fa-chart-bar mr-2"></i>Report</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white">Stato</h3>
+                    <div class="mt-3 text-sm space-y-2">
+                        <p>Versione 1.0</p>
+                        <p id="last-sync">Ultimo sync: <?= date('H:i:s') ?></p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-10 border-t border-gray-700 pt-6 flex items-center justify-between">
+                <p class="text-sm">&copy; 2024 OrdiGO. Tutti i diritti riservati.</p>
+                <div class="flex items-center space-x-4">
+                    <a href="admin/projector.php" target="_blank" class="inline-flex items-center text-sm px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white shadow-sm transition"><i class="fas fa-tv mr-2"></i>Dashboard Proiettore</a>
                 </div>
             </div>
         </div>
@@ -177,14 +194,42 @@
 
         // Service Worker per funzionalità offline avanzate
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('sw.js')
                 .then(registration => {
                     console.log('Service Worker registrato:', registration);
+                    // Tenta di aggiornare il SW appena possibile
+                    try { if (registration.update) registration.update(); } catch (e) {}
+                    // Ricarica la pagina quando cambia il controller (nuovo SW attivo)
+                    let swReloaded = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (swReloaded) return;
+                        swReloaded = true;
+                        console.log('SW controller changed, reloading');
+                        window.location.reload();
+                    });
                 })
                 .catch(error => {
                     console.log('Errore registrazione Service Worker:', error);
                 });
         }
     </script>
-</body>
-</html>
+    <script>
+        // Dopo operazione conclusa con successo, pulisci cache e disattiva SW per evitare contenuti stantii
+        (function() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('type') === 'success') {
+                    if ('caches' in window) {
+                        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(()=>{});
+                    }
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(regs => {
+                            regs.forEach(r => r.unregister());
+                        }).catch(()=>{});
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
+  </body>
+  </html>
