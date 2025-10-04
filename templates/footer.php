@@ -75,7 +75,7 @@
             
             syncQueue.forEach(async (operation, index) => {
                 try {
-                    const response = await fetch('<?= asset_path('api/sync.php') ?>', {
+                    const response = await fetch('/api/sync', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -163,7 +163,7 @@
             setInterval(() => {
                 if (navigator.onLine) {
                     // Controlla aggiornamenti scorte (endpoint opzionale)
-                    fetch('<?= asset_path('api/check-updates.php') ?>')
+                    fetch('/api/check-updates')
                         .then(async response => {
                             const contentType = response.headers.get('content-type') || '';
                             if (!response.ok) throw new Error('HTTP ' + response.status);

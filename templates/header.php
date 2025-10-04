@@ -65,7 +65,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
     <!-- Navigation -->
-    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60" x-data="{ mobileOpen: false }" @keydown.escape="mobileOpen = false">
+    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60" x-data="{ mobileOpen: false }" @keydown.escape="mobileOpen = false" style="border-bottom: 1px solid #2563eb;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">

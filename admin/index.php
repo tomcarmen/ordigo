@@ -78,7 +78,7 @@ if ($page === 'dashboard') {
         <div class="flex-1">
             <!-- Topbar (card arrotondata staccata dalla sidebar) -->
             <div class="px-4 mb-2 md:mb-3">
-                <div class="bg-white ring-1 ring-gray-200/60 shadow-sm rounded-lg">
+                <div class="bg-white ring-1 ring-gray-200/60 shadow-sm rounded-lg" style="border-bottom: 1px solid #2563eb;">
                     <div class="px-4 py-3 flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <button class="md:hidden inline-flex items-center px-2 py-1 rounded hover:bg-gray-100" @click="sidebarOpen = !sidebarOpen"><i class="fas fa-bars"></i></button>
