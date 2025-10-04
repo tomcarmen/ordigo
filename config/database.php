@@ -91,6 +91,17 @@ class Database {
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         );
 
+        -- Tabella offerte stock per bundle di prodotto
+        CREATE TABLE IF NOT EXISTS product_offers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL,
+            offer_price DECIMAL(10,2) NOT NULL,
+            active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        );
+
         -- Tabella offerte stock rimossa su richiesta
 
         -- Tabella ordini
@@ -142,6 +153,7 @@ class Database {
         CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
         CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
         CREATE INDEX IF NOT EXISTS idx_sync_log_status ON sync_log(status);
+        CREATE INDEX IF NOT EXISTS idx_product_offers_product ON product_offers(product_id);
         ";
         
         $this->pdo->exec($sql);

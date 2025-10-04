@@ -147,7 +147,7 @@ $stmt = $db->query("SELECT id, name FROM categories WHERE active = 1 ORDER BY na
 $categories = $stmt->fetchAll();
 ?>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
     <!-- Header con filtri -->
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
         <h1 class="text-3xl font-bold text-gray-900">
@@ -194,7 +194,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Statistiche principali -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -268,7 +268,7 @@ $categories = $stmt->fetchAll();
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Prodotti più venduti -->
         <div class="bg-white rounded-lg shadow overflow-hidden ring-1 ring-gray-100 hover:shadow-md transition">
             <div class="px-6 py-4 border-b border-gray-200">

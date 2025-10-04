@@ -162,15 +162,23 @@
         function startAutoRefresh() {
             setInterval(() => {
                 if (navigator.onLine) {
-                    // Controlla aggiornamenti scorte
+                    // Controlla aggiornamenti scorte (endpoint opzionale)
                     fetch('/api/check-updates')
-                        .then(response => response.json())
+                        .then(async response => {
+                            const contentType = response.headers.get('content-type') || '';
+                            if (!response.ok) throw new Error('HTTP ' + response.status);
+                            if (contentType.includes('application/json')) {
+                                return response.json();
+                            }
+                            // Non JSON: evita parse error e tratta come nessun aggiornamento
+                            return { updates: false };
+                        })
                         .then(data => {
-                            if (data.updates) {
+                            if (data && data.updates) {
                                 location.reload();
                             }
                         })
-                        .catch(error => console.error('Errore check updates:', error));
+                        .catch(error => console.warn('Check updates non disponibile:', error));
                 }
             }, 30000); // Ogni 30 secondi
         }
@@ -181,15 +189,7 @@
             loadSyncQueue();
             startAutoRefresh();
             
-            // Gestione mobile menu
-            const mobileMenuButton = document.querySelector('[data-mobile-menu]');
-            const mobileMenu = document.querySelector('.md\\:hidden > div');
-            
-            if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
+            // Gestione mobile menu spostata su Alpine.js in header
         });
 
         // Service Worker per funzionalità offline avanzate

@@ -75,8 +75,8 @@ switch ($action) {
 // Recupera tutte le categorie con conteggio separato per prodotti attivi e totali
 $stmt = $db->query("
     SELECT c.id, c.name, c.description, c.color as color_hex, c.active, c.created_at,
-           COUNT(p_active.id) as active_products,
-           COUNT(p_all.id) as product_count
+           COUNT(DISTINCT p_active.id) as active_products,
+           COUNT(DISTINCT p_all.id) as product_count
     FROM categories c
     LEFT JOIN products p_active ON c.id = p_active.category_id AND p_active.active = 1
     LEFT JOIN products p_all ON c.id = p_all.category_id
@@ -256,9 +256,9 @@ if ($action === 'edit' && isset($_GET['id'])) {
 <!-- Modal Aggiungi Categoria -->
 <div id="addCategoryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50" role="dialog" aria-modal="true" aria-labelledby="addCategoryTitle">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all my-8 sm:my-8 sm:align-middle w-full max-w-md sm:max-w-lg mx-4 sm:mx-0">
             <form method="POST" action="?route=admin&page=categories&action=add">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="bg-white px-4 sm:px-6 py-5 sm:py-6">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                             <h3 id="addCategoryTitle" class="text-lg leading-6 font-medium text-gray-900 mb-4">
@@ -314,10 +314,10 @@ if ($action === 'edit' && isset($_GET['id'])) {
 <!-- Modal Modifica Categoria -->
 <div id="editCategoryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50" role="dialog" aria-modal="true" aria-labelledby="editCategoryTitle">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white rounded-xl ring-1 ring-gray-200/60 text-left overflow-hidden shadow-2xl transform transition-all my-8 sm:my-8 sm:align-middle w-full max-w-md sm:max-w-lg mx-4 sm:mx-0">
             <form method="POST" action="?route=admin&page=categories&action=edit">
                 <input type="hidden" name="id" value="<?= $edit_category['id'] ?>">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="bg-white px-4 sm:px-6 py-5 sm:py-6">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                             <h3 id="editCategoryTitle" class="text-lg leading-6 font-medium text-gray-900 mb-4">

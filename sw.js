@@ -13,7 +13,7 @@ const STATIC_FILES = [
     '/manifest.json',
     '/icons/icon-192x192.svg',
     '/js/offline.js',
-    'https://cdn.tailwindcss.com',
+    '/assets/tailwind.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
 ];

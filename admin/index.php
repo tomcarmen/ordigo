@@ -47,11 +47,11 @@ if ($page === 'dashboard') {
 // I template sono già inclusi dal file index.php principale
 ?>
 
-<div class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: false }">
+<div class="min-h-screen bg-gray-50 p-4 md:p-6" x-data="{ sidebarOpen: false }">
     <!-- Layout Admin TailAdmin-like -->
-    <div class="flex">
+    <div class="flex gap-4 md:gap-6">
         <!-- Sidebar -->
-        <aside class="hidden md:block w-64 bg-white ring-1 ring-gray-200/60 shadow-sm min-h-screen">
+        <aside class="hidden md:block w-64 bg-white border border-gray-200 shadow-sm min-h-screen rounded-lg overflow-hidden">
             <div class="p-4 border-b">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center"><i class="fas fa-cog"></i></div>
@@ -76,20 +76,22 @@ if ($page === 'dashboard') {
 
         <!-- Content -->
         <div class="flex-1">
-            <!-- Topbar -->
-            <div class="bg-white ring-1 ring-gray-200/60 shadow-sm">
-                <div class="px-4 py-3 flex items-center justify-between">
+            <!-- Topbar (card arrotondata staccata dalla sidebar) -->
+            <div class="px-4 mb-2 md:mb-3">
+                <div class="bg-white ring-1 ring-gray-200/60 shadow-sm rounded-lg">
+                    <div class="px-4 py-3 flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <button class="md:hidden inline-flex items-center px-2 py-1 rounded hover:bg-gray-100" @click="sidebarOpen = !sidebarOpen"><i class="fas fa-bars"></i></button>
                         <h1 class="text-xl font-semibold text-gray-900">Pannello Amministrazione</h1>
                     </div>
                     <!-- Pulsanti rapidi rimossi per evitare duplicazioni -->
+                    </div>
                 </div>
             </div>
 
             <!-- Mobile sidebar -->
             <div class="md:hidden" x-show="sidebarOpen" x-transition>
-                <nav class="bg-white ring-1 ring-gray-200/60 shadow-sm p-2 space-y-1">
+                <nav class="bg-white border border-gray-200 shadow-sm p-2 space-y-1 rounded-xl">
                     <a href="?route=admin&page=dashboard" class="block px-3 py-2 rounded-md <?= $page === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
                         <i class="fas fa-chart-line mr-2"></i>Dashboard
                     </a>

@@ -272,7 +272,7 @@ $recentOrders = $db->query("
                         <div class="mb-3">
                             <?php if (!empty($product['image_url'])): ?>
                             <div class="h-28 w-full rounded-lg overflow-hidden shadow-sm bg-white" style="border: 2px solid <?= $thumbBorderColor ?>;">
-                                <img class="h-full w-full object-cover" src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                                <img class="h-full w-full object-cover" src="<?= htmlspecialchars(asset_path($product['image_url'])) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
                             </div>
                             <?php else: ?>
                             <div class="h-28 w-full rounded-lg shadow-sm bg-white flex items-center justify-center" style="border: 2px solid <?= $thumbBorderColor ?>;">
@@ -331,7 +331,7 @@ $recentOrders = $db->query("
         <!-- Ordini Recenti -->
         <?php if (!empty($recentOrders)): ?>
         <div class="bg-white shadow-lg rounded-lg">
-            <div class="px-6 py-8">
+            <div class="px-4 sm:px-6 py-6 sm:py-8">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-900">Ordini di Oggi</h2>
                     <a href="?route=admin&page=orders" class="text-blue-600 hover:text-blue-800 font-medium">
@@ -342,26 +342,26 @@ $recentOrders = $db->query("
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numero Ordine</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Totale</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ora</th>
+                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numero Ordine</th>
+                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Totale</th>
+                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
+                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ora</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach ($recentOrders as $order): ?>
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <td class="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                                     #<?= htmlspecialchars($order['order_number']) ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                     <?= htmlspecialchars($order['customer_name'] ?: 'Cliente anonimo') ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                <td class="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-green-600">
                                     € <?= number_format($order['total_amount'], 2) ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                                     <?php
                                     $statusColors = [
                                         'pending' => 'bg-yellow-100 text-yellow-800',
@@ -382,7 +382,7 @@ $recentOrders = $db->query("
                                         <?= $statusLabels[$order['status']] ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                     <?= date('H:i', strtotime($order['created_at'])) ?>
                                 </td>
                             </tr>

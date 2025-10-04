@@ -4,21 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrdiGO - Gestione Ordini Festa Oratorio</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        secondary: '#10B981',
-                        accent: '#F59E0B',
-                        danger: '#EF4444'
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="assets/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- PWA e Offline Support -->
@@ -43,6 +29,8 @@
             background-color: #10b981;
             color: white;
         }
+        /* Alpine.js: nasconde gli elementi finché non sono inizializzati */
+        [x-cloak] { display: none !important; }
         .connection-status.offline {
             background-color: #ef4444;
             color: white;
@@ -77,7 +65,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
     <!-- Navigation -->
-    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60">
+    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60" x-data="{ mobileOpen: false }" @keydown.escape="mobileOpen = false">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -114,7 +102,7 @@
                     </div>
 
                     <!-- Mobile menu button -->
-                    <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary" aria-controls="mobile-menu" aria-expanded="false" data-mobile-menu>
+                    <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary" aria-controls="mobile-menu" :aria-expanded="mobileOpen.toString()" @click="mobileOpen = !mobileOpen">
                         <span class="sr-only">Apri menu</span>
                         <i class="fas fa-bars text-xl"></i>
                     </button>
@@ -124,7 +112,7 @@
         
         <!-- Mobile menu -->
         <div class="md:hidden">
-            <div class="hidden px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/80 backdrop-blur ring-1 ring-gray-200/60 rounded-b-lg shadow-sm">
+            <div x-cloak x-show="mobileOpen" x-transition.opacity x-transition.duration.200ms class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/80 backdrop-blur ring-1 ring-gray-200/60 rounded-b-lg shadow-sm" id="mobile-menu">
                 <a href="?route=home" class="<?= ($route == 'home') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-home mr-2"></i>Home
                 </a>

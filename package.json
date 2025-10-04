@@ -1,6 +1,12 @@
 {
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/input.css -o ./assets/tailwind.css --minify",
+    "dev:css": "tailwindcss -i ./assets/input.css -o ./assets/tailwind.css --watch"
+  },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.14",
+    "@tailwindcss/postcss": "^4.1.14",
+    "postcss": "^8.5.6",
     "tailwindcss": "^4.1.14"
   }
 }

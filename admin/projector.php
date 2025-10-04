@@ -134,7 +134,7 @@ $chartData = getChartData($db);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrdiGO - Dashboard Proiettore</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/tailwind.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -212,6 +212,7 @@ $chartData = getChartData($db);
     </style>
 </head>
 <body class="min-h-screen p-4 text-gray-800">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
     <!-- Header con logo e ora -->
     <div class="projector-card rounded-2xl p-6 mb-6 ring-1 ring-gray-200/60 shadow-lg">
         <div class="flex justify-between items-center">
@@ -236,7 +237,7 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Statistiche principali -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <!-- Ordini oggi -->
         <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
             <div class="bg-gradient-to-r from-green-400 to-green-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
@@ -281,7 +282,7 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Grafici e dati -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
         <!-- Grafico vendite giornaliere -->
         <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -306,7 +307,7 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Prodotti più venduti e ordini recenti -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
         <!-- Prodotti più venduti -->
         <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -361,7 +362,7 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Ticker informazioni -->
-    <div class="projector-card rounded-2xl p-4 overflow-hidden ring-1 ring-gray-200/60 shadow-lg">
+    <div class="projector-card rounded-2xl p-4 overflow-x-auto ring-1 ring-gray-200/60 shadow-lg">
         <div class="ticker text-lg font-semibold text-gray-700">
             <span class="mr-8">📊 Dashboard aggiornata in tempo reale</span>
             <span class="mr-8">🔄 Sincronizzazione automatica ogni 30 secondi</span>
@@ -496,5 +497,6 @@ $chartData = getChartData($db);
 
         console.log('OrdiGO Projector Dashboard loaded successfully');
     </script>
+</div>
 </body>
 </html>

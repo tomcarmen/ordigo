@@ -11,6 +11,22 @@ require_once 'config/database.php';
 // Routing semplice
 $route = $_GET['route'] ?? 'home';
 
+// Helper per comporre URL asset funzionanti sia in root (/) che in sottocartella (/ordigo)
+if (!function_exists('asset_path')) {
+    function asset_path($path) {
+        $path = (string)$path;
+        if ($path === '') return '';
+        // Non modificare URL assoluti o data URI
+        if (preg_match('/^(https?:|data:|\/\/)/i', $path)) {
+            return $path;
+        }
+        $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+        $base = $base ? $base : '';
+        // Normalizza e garantisce uno slash singolo tra base e path
+        return $base . '/' . ltrim($path, '/\\');
+    }
+}
+
 // Header comune
 include 'templates/header.php';
 
