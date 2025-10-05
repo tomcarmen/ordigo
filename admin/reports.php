@@ -156,7 +156,9 @@ $categories = $stmt->fetchAll();
         
         <!-- Filtri -->
         <div class="flex flex-wrap gap-4 no-print">
-            <form method="GET" action="?route=report" class="flex flex-wrap gap-3 items-end">
+            <form id="reports-filter-form" method="GET" action="<?= asset_path('index.php') ?>?route=admin&page=reports" class="flex flex-wrap gap-3 items-end">
+                <input type="hidden" name="route" value="admin">
+                <input type="hidden" name="page" value="reports">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Da</label>
                     <input type="date" name="date_from" value="<?= $date_from ?>" 
@@ -186,10 +188,28 @@ $categories = $stmt->fetchAll();
                         <option value="month" <?= $period == 'month' ? 'selected' : '' ?>>Mensile</option>
                     </select>
                 </div>
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors text-sm">
-                    <i class="fas fa-filter mr-1"></i>Filtra
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-400 text-blue-600 rounded-md shadow-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors font-medium text-sm">
+                    <i class="fas fa-filter mr-2 text-blue-600"></i>Filtra
                 </button>
             </form>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var form = document.getElementById('reports-filter-form');
+                if (!form) return;
+                form.addEventListener('submit', function(e) {
+                    // Se offline, lascia gestire a OfflineManager
+                    if (!navigator.onLine) return;
+                    // Forza URL con route=admin&page=reports
+                    e.preventDefault();
+                    var fd = new FormData(form);
+                    var params = new URLSearchParams(fd);
+                    params.set('route', 'admin');
+                    params.set('page', 'reports');
+                    var target = '<?= asset_path('index.php') ?>' + '?' + params.toString();
+                    window.location.assign(target);
+                });
+            });
+            </script>
         </div>
     </div>
 

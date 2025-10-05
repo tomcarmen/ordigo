@@ -140,36 +140,44 @@ $chartData = getChartData($db);
     <style>
         /* Stili ottimizzati per proiettore */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .projector-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .projector-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 50px rgba(0, 0, 0, 0.2);
         }
         
         .stat-number {
-            font-size: 3rem;
+            font-size: 3.2rem;
             font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.08);
+            line-height: 1.1;
         }
         
         .stat-label {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            opacity: 0.8;
+            opacity: 0.9;
+            letter-spacing: -0.01em;
         }
         
         .chart-container {
             position: relative;
-            height: 300px;
+            height: 320px;
         }
         
         .ticker {
-            animation: scroll-left 30s linear infinite;
+            animation: scroll-left 35s linear infinite;
             white-space: nowrap;
         }
         
@@ -183,123 +191,145 @@ $chartData = getChartData($db);
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
         }
         
         .status-indicator {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 8px;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
         }
         
         .status-pending { background-color: #f59e0b; }
         .status-completed { background-color: #10b981; }
         .status-cancelled { background-color: #ef4444; }
         
+        /* Effetto glow per elementi importanti */
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* Animazione fade-in per elementi */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
         /* Responsive per diversi tipi di proiettore */
         @media (min-width: 1920px) {
-            .stat-number { font-size: 4rem; }
-            .stat-label { font-size: 1.5rem; }
+            .stat-number { font-size: 4.2rem; }
+            .stat-label { font-size: 1.6rem; }
         }
         
         @media (max-width: 1366px) {
-            .stat-number { font-size: 2.5rem; }
-            .stat-label { font-size: 1rem; }
+            .stat-number { font-size: 2.8rem; }
+            .stat-label { font-size: 1.1rem; }
         }
     </style>
 </head>
-<body class="min-h-screen p-4 text-gray-800">
-    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+<body class="min-h-screen p-6 text-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header con logo e ora -->
-    <div class="projector-card rounded-2xl p-6 mb-6 ring-1 ring-gray-200/60 shadow-lg">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-xl">
-                    <i class="fas fa-chart-line text-2xl"></i>
+    <div class="projector-card rounded-xl p-6 mb-8 glow-effect fade-in">
+        <div class="flex flex-col sm:flex-row justify-between items-center">
+            <div class="flex items-center space-x-5 mb-4 sm:mb-0">
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-700 text-white p-4 rounded-xl shadow-lg">
+                    <i class="fas fa-chart-bar text-3xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800">OrdiGO Dashboard</h1>
-                    <p class="text-gray-600">Sistema di Gestione Ordini</p>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-700">OrdiGO Dashboard</h1>
+                    <p class="text-gray-600 text-lg">Sistema di Gestione Ordini in Tempo Reale</p>
                 </div>
             </div>
-            <div class="text-right">
-                <div id="current-time" class="text-2xl font-bold text-gray-800"></div>
-                <div id="current-date" class="text-gray-600"></div>
-                <div class="flex items-center mt-2">
-                    <div id="connection-status" class="status-indicator bg-green-500"></div>
-                    <span class="text-sm text-gray-600">Sistema Online</span>
+            <div class="text-center sm:text-right">
+                <div id="current-time" class="text-3xl font-bold text-indigo-700"></div>
+                <div id="current-date" class="text-gray-600 text-lg"></div>
+                <div class="flex items-center justify-center sm:justify-end mt-3">
+                    <div id="connection-status" class="status-indicator bg-green-500 pulse-animation"></div>
+                    <span class="text-sm font-medium text-gray-700">Sistema Online</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Statistiche principali -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Ordini oggi -->
-        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
-            <div class="bg-gradient-to-r from-green-400 to-green-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
-                <i class="fas fa-shopping-cart text-3xl"></i>
+        <div class="projector-card rounded-xl p-6 text-center shadow-lg fade-in" style="animation-delay: 0.1s;">
+            <div class="bg-gradient-to-br from-emerald-400 to-green-600 text-white p-4 rounded-xl shadow-lg mb-4 mx-auto w-16 h-16 flex items-center justify-center">
+                <i class="fas fa-shopping-cart text-2xl"></i>
             </div>
-            <div class="stat-number text-green-600"><?= $stats['todayOrders']['count'] ?></div>
-            <div class="stat-label text-gray-700">Ordini Oggi</div>
-            <div class="text-lg font-semibold text-gray-600 mt-2">
+            <div class="stat-number text-emerald-600"><?= $stats['todayOrders']['count'] ?></div>
+            <div class="stat-label text-gray-700 mb-1">Ordini Oggi</div>
+            <div class="text-lg font-bold text-emerald-600 mt-2">
                 €<?= number_format($stats['todayOrders']['total'], 2) ?>
             </div>
         </div>
 
         <!-- Scorte basse -->
-        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
-            <div class="bg-gradient-to-r from-red-400 to-red-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit pulse-animation">
-                <i class="fas fa-exclamation-triangle text-3xl"></i>
+        <div class="projector-card rounded-xl p-6 text-center shadow-lg fade-in" style="animation-delay: 0.2s;">
+            <div class="bg-gradient-to-br from-red-400 to-red-600 text-white p-4 rounded-xl shadow-lg mb-4 mx-auto w-16 h-16 flex items-center justify-center pulse-animation">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
             </div>
             <div class="stat-number text-red-600"><?= $stats['lowStock']['count'] ?></div>
-            <div class="stat-label text-gray-700">Scorte Basse</div>
-            <div class="text-sm text-red-600 mt-2 font-medium">Richiede Attenzione</div>
+            <div class="stat-label text-gray-700 mb-1">Scorte Basse</div>
+            <div class="text-sm font-semibold text-red-600 mt-2">Richiede Attenzione</div>
         </div>
 
         <!-- Ordini in attesa -->
-        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
-            <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
-                <i class="fas fa-clock text-3xl"></i>
+        <div class="projector-card rounded-xl p-6 text-center shadow-lg fade-in" style="animation-delay: 0.3s;">
+            <div class="bg-gradient-to-br from-amber-400 to-yellow-600 text-white p-4 rounded-xl shadow-lg mb-4 mx-auto w-16 h-16 flex items-center justify-center">
+                <i class="fas fa-clock text-2xl"></i>
             </div>
-            <div class="stat-number text-yellow-600"><?= $stats['pendingOrders']['count'] ?></div>
-            <div class="stat-label text-gray-700">In Attesa</div>
-            <div class="text-sm text-yellow-600 mt-2 font-medium">Da Processare</div>
+            <div class="stat-number text-amber-600"><?= $stats['pendingOrders']['count'] ?></div>
+            <div class="stat-label text-gray-700 mb-1">In Attesa</div>
+            <div class="text-sm font-semibold text-amber-600 mt-2">Da Processare</div>
         </div>
 
         <!-- Ricavi mensili -->
-        <div class="projector-card rounded-2xl p-6 text-center ring-1 ring-gray-200/60 shadow-lg">
-            <div class="bg-gradient-to-r from-blue-400 to-blue-600 text-white p-4 rounded-xl mb-4 mx-auto w-fit">
-                <i class="fas fa-euro-sign text-3xl"></i>
+        <div class="projector-card rounded-xl p-6 text-center shadow-lg fade-in" style="animation-delay: 0.4s;">
+            <div class="bg-gradient-to-br from-indigo-400 to-blue-600 text-white p-4 rounded-xl shadow-lg mb-4 mx-auto w-16 h-16 flex items-center justify-center">
+                <i class="fas fa-euro-sign text-2xl"></i>
             </div>
-            <div class="stat-number text-blue-600">€<?= number_format($stats['monthlyRevenue']['total'], 0) ?></div>
-            <div class="stat-label text-gray-700">Ricavi Mese</div>
-            <div class="text-sm text-blue-600 mt-2 font-medium">Corrente</div>
+            <div class="stat-number text-indigo-600">€<?= number_format($stats['monthlyRevenue']['total'], 0) ?></div>
+            <div class="stat-label text-gray-700 mb-1">Ricavi Mese</div>
+            <div class="text-sm font-semibold text-indigo-600 mt-2">Corrente</div>
         </div>
     </div>
 
     <!-- Grafici e dati -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
         <!-- Grafico vendite giornaliere -->
-        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <i class="fas fa-chart-line text-blue-500 mr-3"></i>
-                Vendite Ultimi 7 Giorni
-            </h3>
+        <div class="projector-card rounded-xl p-6 shadow-lg fade-in" style="animation-delay: 0.7s;">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-chart-line text-blue-500 mr-3"></i>
+                    Vendite Ultimi 7 Giorni
+                </h3>
+                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">Trend</span>
+            </div>
             <div class="chart-container">
                 <canvas id="dailySalesChart"></canvas>
             </div>
         </div>
 
         <!-- Grafico vendite per categoria -->
-        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <i class="fas fa-chart-pie text-purple-500 mr-3"></i>
-                Vendite per Categoria
-            </h3>
+        <div class="projector-card rounded-xl p-6 shadow-lg fade-in" style="animation-delay: 0.8s;">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-chart-pie text-purple-500 mr-3"></i>
+                    Vendite per Categoria
+                </h3>
+                <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">Distribuzione</span>
+            </div>
             <div class="chart-container">
                 <canvas id="categoryChart"></canvas>
             </div>
@@ -307,9 +337,9 @@ $chartData = getChartData($db);
     </div>
 
     <!-- Prodotti più venduti e ordini recenti -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
         <!-- Prodotti più venduti -->
-        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
+        <div class="projector-card rounded-xl p-6 shadow-lg fade-in" style="animation-delay: 0.5s;">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-trophy text-yellow-500 mr-3"></i>
                 Top Prodotti (30gg)
@@ -336,7 +366,7 @@ $chartData = getChartData($db);
         </div>
 
         <!-- Ordini recenti -->
-        <div class="projector-card rounded-2xl p-6 ring-1 ring-gray-200/60 shadow-lg">
+        <div class="projector-card rounded-xl p-6 shadow-lg fade-in" style="animation-delay: 0.6s;">
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-list text-green-500 mr-3"></i>
                 Ordini Recenti

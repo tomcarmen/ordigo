@@ -36,7 +36,9 @@ switch ($route) {
         include 'admin/index.php';
         break;
     case 'report':
-        include 'admin/reports.php';
+        // Mostra i report dentro il layout Admin (con sidebar)
+        $_GET['page'] = 'reports';
+        include 'admin/index.php';
         break;
     default:
         include 'pages/home.php';

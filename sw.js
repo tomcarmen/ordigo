@@ -3,17 +3,17 @@
  * Gestione cache e funzionalità offline
  */
 
-const CACHE_NAME = 'ordigo-v1.0.1';
-const STATIC_CACHE = 'ordigo-static-v1.0.1';
-const DYNAMIC_CACHE = 'ordigo-dynamic-v1.0.1';
+const CACHE_NAME = 'ordigo-v1.0.2';
+const STATIC_CACHE = 'ordigo-static-v1.0.2';
+const DYNAMIC_CACHE = 'ordigo-dynamic-v1.0.2';
 
 // File da cachare immediatamente
 const STATIC_FILES = [
-    // Solo risorse veramente statiche
-    '/manifest.json',
-    '/icons/icon-192x192.svg',
-    '/js/offline.js',
-    '/assets/tailwind.css',
+    // Solo risorse veramente statiche (relative allo scope del SW)
+    'manifest.json',
+    'icons/icon-192x192.svg',
+    'js/offline.js',
+    'assets/tailwind.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
 ];
@@ -69,12 +69,24 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const { request } = event;
     const url = new URL(request.url);
-    
+
     // Ignora richieste non HTTP/HTTPS
     if (!request.url.startsWith('http')) {
         return;
     }
-    
+
+    // Tratta le navigazioni HTML e le route basate su query come contenuti dinamici
+    if (request.mode === 'navigate' || url.searchParams.has('route')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    // Gestione POST con coda offline: tenta rete, altrimenti accoda e conferma
+    if (request.method === 'POST') {
+        event.respondWith(networkFirstWithOfflineQueue(request));
+        return;
+    }
+
     // Evita di cacheare pagine PHP dinamiche: preferisci rete
     if (request.url.includes('.php')) {
         event.respondWith(networkFirst(request));
@@ -86,13 +98,13 @@ self.addEventListener('fetch', event => {
         event.respondWith(cacheFirst(request));
         return;
     }
-    
+
     // Strategia Network First per API e dati dinamici
-    if (isApiRequest(request.url)) {
+    if (isApiRequest(request)) {
         event.respondWith(networkFirst(request));
         return;
     }
-    
+
     // Strategia Stale While Revalidate per pagine
     event.respondWith(staleWhileRevalidate(request));
 });
@@ -112,10 +124,11 @@ function isStaticFile(url) {
 }
 
 // Verifica se è una richiesta API
-function isApiRequest(url) {
-    return url.includes('api/') || 
+function isApiRequest(request) {
+    const url = request.url;
+    return url.includes('api/') ||
            url.includes('action=') ||
-           (url.includes('.php') && url.includes('POST'));
+           (url.includes('.php') && request.method === 'POST');
 }
 
 // Strategia Cache First
@@ -156,7 +169,15 @@ async function networkFirst(request) {
         if (cachedResponse) {
             return cachedResponse;
         }
-        
+
+        // Per navigazioni, fornisci fallback HTML
+        if (request.mode === 'navigate') {
+            return new Response('<h1>Offline</h1><p>Contenuto non disponibile.</p>', {
+                status: 503,
+                headers: { 'Content-Type': 'text/html' }
+            });
+        }
+
         // Risposta offline per richieste API
         return new Response(JSON.stringify({
             error: 'Offline',
@@ -169,22 +190,78 @@ async function networkFirst(request) {
     }
 }
 
+// Network First con coda offline per POST
+async function networkFirstWithOfflineQueue(request) {
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse.ok) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    } catch (error) {
+        console.log('[SW] POST failed, enqueue for offline sync:', error);
+        try {
+            const cloned = request.clone();
+            const contentType = request.headers.get('Content-Type') || '';
+            const bodyText = await cloned.text();
+
+            await addPendingOperation({
+                url: request.url,
+                method: request.method,
+                body: bodyText,
+                headers: { 'Content-Type': contentType },
+                timestamp: Date.now(),
+                status: 'pending'
+            });
+
+            // Registra background sync
+            if (self.registration && self.registration.sync) {
+                try { await self.registration.sync.register('background-sync'); } catch (e) {}
+            }
+
+            // Conferma al client che l'operazione è stata salvata
+            return new Response(JSON.stringify({
+                success: true,
+                offline: true,
+                message: 'Operazione salvata per sincronizzazione'
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (enqueueError) {
+            console.log('[SW] Failed to enqueue operation:', enqueueError);
+            return new Response(JSON.stringify({
+                error: 'Offline',
+                message: 'Operazione non disponibile offline',
+                offline: true
+            }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+}
+
 // Strategia Stale While Revalidate
 async function staleWhileRevalidate(request) {
     const cache = await caches.open(DYNAMIC_CACHE);
     const cachedResponse = await cache.match(request);
     
-    const fetchPromise = fetch(request).then(networkResponse => {
-        if (networkResponse.ok) {
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.ok) {
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-    }).catch(error => {
+    } catch (error) {
         console.log('[SW] Network failed:', error);
-        return cachedResponse;
-    });
-    
-    return cachedResponse || fetchPromise;
+        // Fallback: ritorna cache se presente, altrimenti risposta offline
+        return cachedResponse || new Response('<h1>Offline</h1><p>Contenuto non disponibile.</p>', {
+            status: 503,
+            headers: { 'Content-Type': 'text/html' }
+        });
+    }
 }
 
 // Gestione messaggi dal client
@@ -230,7 +307,7 @@ function handleDataSync(data) {
 // Background Sync per operazioni offline
 self.addEventListener('sync', event => {
     console.log('[SW] Background sync:', event.tag);
-    
+
     if (event.tag === 'background-sync') {
         event.waitUntil(doBackgroundSync());
     }
@@ -238,12 +315,19 @@ self.addEventListener('sync', event => {
 
 async function doBackgroundSync() {
     try {
-        // Recupera dati pendenti dal IndexedDB
         const pendingData = await getPendingData();
-        
+
         for (const item of pendingData) {
             try {
-                await syncDataItem(item);
+                const headers = item.headers || {};
+                const response = await fetch(item.url, {
+                    method: item.method || 'POST',
+                    headers: Object.assign({}, headers, { 'X-Background-Sync': 'true' }),
+                    body: item.body
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
                 await removePendingData(item.id);
             } catch (error) {
                 console.log('[SW] Sync failed for item:', item.id, error);
@@ -254,20 +338,56 @@ async function doBackgroundSync() {
     }
 }
 
-// Placeholder per gestione dati pendenti
-async function getPendingData() {
-    // Implementazione futura con IndexedDB
-    return [];
+// IndexedDB helpers per SW
+const DB_NAME = 'OrdiGO_SW';
+const DB_VERSION = 1;
+const STORE_NAME = 'pendingOperations';
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
 }
 
-async function syncDataItem(item) {
-    // Implementazione futura per sincronizzazione singolo elemento
-    console.log('[SW] Syncing item:', item);
+async function addPendingOperation(operation) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.add(operation);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function getPendingData() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+    });
 }
 
 async function removePendingData(id) {
-    // Implementazione futura per rimozione dati sincronizzati
-    console.log('[SW] Removing synced item:', id);
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    });
 }
 
 // Notifiche push (placeholder)

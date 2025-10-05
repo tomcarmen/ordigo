@@ -76,7 +76,21 @@ class OfflineManager {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('sw.js');
+                // Evita doppie registrazioni se già presente
+                const existingRegs = await navigator.serviceWorker.getRegistrations();
+                if (existingRegs && existingRegs.length > 0) {
+                    console.log('[Offline] Service Worker già registrato');
+                    return;
+                }
+
+                // Calcola base dell'app (es. /ordigo) dalla pathname
+                const parts = (window.location.pathname || '/').split('/');
+                // Rimuovi ultimo segmento (file) e la directory finale se presente (es. /admin)
+                let base = parts.slice(0, Math.max(parts.length - 2, 1)).join('/') || '/';
+                if (!base.startsWith('/')) base = '/' + base;
+                const swUrl = `${window.location.origin}${base}${base.endsWith('/') ? '' : '/'}sw.js`;
+
+                const registration = await navigator.serviceWorker.register(swUrl);
                 console.log('[Offline] Service Worker registered:', registration);
                 
                 // Gestione aggiornamenti SW
@@ -377,10 +391,13 @@ class OfflineManager {
     // Sistema toast generico
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
+        const blinkClass = (type === 'error' || type === 'warning') ? 'blink' : '';
+        toast.className = `toast ${blinkClass}`;
+        const bg = (type === 'error' || type === 'warning') ? 'bg-red-600 text-white' :
+                    (type === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white');
         toast.innerHTML = `
-            <div class="toast-content bg-white border-l-4 border-${this.getToastColor(type)}-500 p-4 shadow-lg rounded">
-                <p class="text-gray-800">${message}</p>
+            <div class="toast-content ${bg} p-4 shadow-lg rounded">
+                <p class="font-semibold">${message}</p>
             </div>
         `;
         

@@ -13,7 +13,7 @@
                     <ul class="mt-3 space-y-2 text-sm">
                         <li><a class="hover:text-white" href="?route=home"><i class="fas fa-home mr-2"></i>Home</a></li>
                         <li><a class="hover:text-white" href="?route=admin&page=products"><i class="fas fa-cog mr-2"></i>Admin</a></li>
-                        <li><a class="hover:text-white" href="?route=report"><i class="fas fa-chart-bar mr-2"></i>Report</a></li>
+<li><a class="hover:text-white" href="?route=admin&page=reports"><i class="fas fa-chart-bar mr-2"></i>Report</a></li>
                     </ul>
                 </div>
                 <div>
@@ -27,7 +27,7 @@
             <div class="mt-10 border-t border-gray-700 pt-6 flex items-center justify-between">
                 <p class="text-sm">&copy; 2024 OrdiGO. Tutti i diritti riservati.</p>
                 <div class="flex items-center space-x-4">
-                    <a href="admin/projector.php" target="_blank" class="inline-flex items-center text-sm px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white shadow-sm transition"><i class="fas fa-tv mr-2"></i>Dashboard Proiettore</a>
+                    <a href="<?= asset_path('admin/projector.php') ?>" target="_blank" class="inline-flex items-center text-sm px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white shadow-sm transition"><i class="fas fa-tv mr-2"></i>Dashboard Proiettore</a>
                 </div>
             </div>
         </div>
@@ -143,19 +143,20 @@
         // Notifiche toast
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' :
-                type === 'error' ? 'bg-red-500 text-white' :
-                type === 'warning' ? 'bg-yellow-500 text-white' :
-                'bg-blue-500 text-white'
-            }`;
+            const baseClasses = 'fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50';
+            const colorClass = type === 'error' ? 'bg-red-600 text-white' :
+                               type === 'warning' ? 'bg-red-500 text-white' :
+                               type === 'success' ? 'bg-green-600 text-white' :
+                               'bg-blue-600 text-white';
+            const blinkClass = (type === 'error' || type === 'warning') ? 'blink' : '';
+            toast.className = `${baseClasses} ${colorClass} ${blinkClass}`;
             toast.textContent = message;
             
             document.body.appendChild(toast);
             
             setTimeout(() => {
                 toast.remove();
-            }, 3000);
+            }, 4000);
         }
 
         // Auto-refresh per aggiornamenti in tempo reale
@@ -190,11 +191,29 @@
             startAutoRefresh();
             
             // Gestione mobile menu spostata su Alpine.js in header
+
+            // Scorciatoia tastiera: premi "A" per aprire Vendite
+            const salesUrl = '<?= asset_path('sales.php') ?>';
+            function isTypingTarget(target) {
+                if (!target) return false;
+                const tag = (target.tagName || '').toUpperCase();
+                return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+            }
+            document.addEventListener('keydown', function(e) {
+                // Evita conflitti mentre si digita nei campi
+                if (isTypingTarget(e.target)) return;
+                // Nessun modificatore e tasto "a"
+                const key = (e.key || '').toLowerCase();
+                if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && key === 'a') {
+                    e.preventDefault();
+                    window.location.href = salesUrl;
+                }
+            });
         });
 
         // Service Worker per funzionalità offline avanzate
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
+            navigator.serviceWorker.register('<?= asset_path('sw.js') ?>')
                 .then(registration => {
                     console.log('Service Worker registrato:', registration);
                     // Tenta di aggiornare il SW appena possibile

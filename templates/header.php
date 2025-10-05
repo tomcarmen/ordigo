@@ -4,13 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrdiGO - Gestione Ordini Festa Oratorio</title>
-    <link rel="stylesheet" href="assets/tailwind.css">
+    <?php
+        $twPath = __DIR__ . '/../assets/tailwind.css';
+        $twVer = file_exists($twPath) ? filemtime($twPath) : time();
+    ?>
+    <!-- Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= asset_path('assets/tailwind.css') . '?v=' . $twVer ?>">
+    <!-- Inclusione Tailwind via CDN per garantire utilità JIT in pagina -->
+    <script>
+        window.tailwindFallbackConfig = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#60a5fa' }
+                    },
+                    fontFamily: {
+                        sans: ["Inter","ui-sans-serif","system-ui","Segoe UI","Helvetica Neue","Arial","Noto Sans","sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (window.tailwind && window.tailwind.config && window.tailwindFallbackConfig) {
+            window.tailwind.config = Object.assign({}, window.tailwindFallbackConfig, window.tailwind.config);
+        } else if (window.tailwindFallbackConfig) {
+            window.tailwind = { config: window.tailwindFallbackConfig };
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- PWA e Offline Support -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="<?= asset_path('manifest.json') ?>">
     <meta name="theme-color" content="#667eea">
-    <script src="js/offline.js"></script>
+    <script src="<?php echo asset_path('js/offline.js') . '?v=' . (file_exists(__DIR__ . '/../js/offline.js') ? filemtime(__DIR__ . '/../js/offline.js') : time()); ?>"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
@@ -47,6 +78,14 @@
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
+        /* Effetto lampeggiante per allarmi */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        .blink {
+            animation: blink 1s ease-in-out infinite;
+        }
     </style>
     <style>
         /* Stili personalizzati per proiettore */
@@ -63,9 +102,9 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans">
     <!-- Navigation -->
-    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60" x-data="{ mobileOpen: false }" @keydown.escape="mobileOpen = false" style="border-bottom: 1px solid #2563eb;">
+    <nav class="bg-white/90 backdrop-blur-md shadow-sm ring-1 ring-gray-200/60" x-data="{ mobileOpen: false }" @keydown.escape="mobileOpen = false" style="border-bottom: 2px solid #60a5fa;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -75,13 +114,16 @@
                         </h1>
                     </div>
                     <div class="hidden md:ml-6 md:flex md:space-x-8">
-                        <a href="?route=home" class="<?= ($route == 'home') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
+                        <a href="<?= asset_path('index.php?route=home') ?>" class="<?= ($route == 'home') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
                             <i class="fas fa-home mr-2"></i>Home
                         </a>
-                        <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
+                        <a href="<?= asset_path('index.php?route=admin&page=products') ?>" class="<?= ($route == 'admin') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
                             <i class="fas fa-cog mr-2"></i>Admin
                         </a>
-                        <a href="admin/projector.php" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors" target="_blank">
+                        <a href="<?= asset_path('sales.php') ?>" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
+                            <i class="fas fa-shopping-cart mr-2"></i>Vendite
+                        </a>
+                        <a href="<?= asset_path('admin/projector.php') ?>" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors" target="_blank">
                             <i class="fas fa-tv mr-2"></i>Dashboard Proiettore
                         </a>
                     </div>
@@ -113,11 +155,14 @@
         <!-- Mobile menu -->
         <div class="md:hidden">
             <div x-cloak x-show="mobileOpen" x-transition.opacity x-transition.duration.200ms class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/80 backdrop-blur ring-1 ring-gray-200/60 rounded-b-lg shadow-sm" id="mobile-menu">
-                <a href="?route=home" class="<?= ($route == 'home') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
+                <a href="<?= asset_path('index.php?route=home') ?>" class="<?= ($route == 'home') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-home mr-2"></i>Home
                 </a>
-                <a href="?route=admin&page=products" class="<?= ($route == 'admin') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
+                <a href="<?= asset_path('index.php?route=admin&page=products') ?>" class="<?= ($route == 'admin') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-cog mr-2"></i>Admin
+                </a>
+                <a href="<?= asset_path('sales.php') ?>" class="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-shopping-cart mr-2"></i>Vendite
                 </a>
             </div>
         </div>

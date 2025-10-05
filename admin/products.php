@@ -529,7 +529,7 @@ if (!function_exists('asset_path')) {
                                                 <td class="px-4 py-2 text-sm">
                                                     <span class="font-medium <?= $lowStock ? 'text-red-600' : 'text-gray-900' ?>"><?= (int)($extra['stock_quantity'] ?? 0) ?></span>
                                                     <?php if ($lowStock): ?>
-                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Scorta bassa</span>
+                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-600 text-white blink">Scorta bassa</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="px-4 py-2 text-sm text-gray-900"><?= (int)($extra['min_stock_level'] ?? 0) ?></td>

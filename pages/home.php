@@ -104,7 +104,7 @@ $recentOrders = $db->query("
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900">Report Avanzati</h3>
                     <p class="mt-2 text-sm text-gray-600">Statistiche vendite, prodotti più venduti e analisi per categoria.</p>
-                    <a href="?route=report" class="mt-4 inline-flex items-center text-green-600 hover:text-green-800 text-sm font-medium">
+                    <a href="?route=admin&page=reports" class="mt-4 inline-flex items-center text-green-600 hover:text-green-800 text-sm font-medium">
                         Vedi Report <i class="fas fa-arrow-right ml-2"></i>
                     </a>
                 </div>
@@ -271,12 +271,26 @@ $recentOrders = $db->query("
                         <?php $thumbBorderColor = htmlspecialchars($product['category_color'] ?? '#D1D5DB'); ?>
                         <div class="mb-3">
                             <?php if (!empty($product['image_url'])): ?>
-                            <div class="h-28 w-full rounded-lg overflow-hidden shadow-sm bg-white" style="border: 2px solid <?= $thumbBorderColor ?>;">
+                            <div class="relative h-28 w-full rounded-lg overflow-hidden shadow-sm bg-white" style="border: 2px solid <?= $thumbBorderColor ?>;">
                                 <img class="h-full w-full object-cover" src="<?= htmlspecialchars(asset_path($product['image_url'])) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                                <!-- Badge categoria in alto a sinistra -->
+                                <?php if (!empty($product['category_name'])): ?>
+                                <span class="absolute top-2 left-2 text-xs font-semibold px-2 py-1 rounded-full shadow"
+                                      style="background-color: <?= htmlspecialchars($product['category_color'] ?? '#D1D5DB') ?>; color: #ffffff;">
+                                    <?= htmlspecialchars($product['category_name']) ?>
+                                </span>
+                                <?php endif; ?>
                             </div>
                             <?php else: ?>
-                            <div class="h-28 w-full rounded-lg shadow-sm bg-white flex items-center justify-center" style="border: 2px solid <?= $thumbBorderColor ?>;">
+                            <div class="relative h-28 w-full rounded-lg shadow-sm bg-white flex items-center justify-center" style="border: 2px solid <?= $thumbBorderColor ?>;">
                                 <i class="fas fa-box text-gray-400 text-2xl"></i>
+                                <!-- Badge categoria in alto a sinistra -->
+                                <?php if (!empty($product['category_name'])): ?>
+                                <span class="absolute top-2 left-2 text-xs font-semibold px-2 py-1 rounded-full shadow"
+                                      style="background-color: <?= htmlspecialchars($product['category_color'] ?? '#D1D5DB') ?>; color: #ffffff;">
+                                    <?= htmlspecialchars($product['category_name']) ?>
+                                </span>
+                                <?php endif; ?>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -285,12 +299,7 @@ $recentOrders = $db->query("
                             <span class="text-lg font-bold text-green-600">€ <?= number_format((float)($product['selling_price'] ?? $product['price']), 2) ?></span>
                         </div>
                         
-                        <?php if ($product['category_name']): ?>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-2" 
-                              style="background-color: <?= $product['category_color'] ?>20; color: <?= $product['category_color'] ?>;">
-                            <?= htmlspecialchars($product['category_name']) ?>
-                        </span>
-                        <?php endif; ?>
+                        <?php /* Badge categoria spostato in overlay sull'immagine */ ?>
                         
                         <p class="text-sm text-gray-600 mb-3"><?= htmlspecialchars($product['description']) ?></p>
                         <?php $extras = $extrasByProduct[$product['id']] ?? []; if (!empty($extras)): ?>

@@ -1,10 +1,21 @@
 <?php
 // Abilita output buffering per consentire header() anche dopo contenuti inclusi
 if (!headers_sent()) { @ob_start(); }
-// Il database è già incluso dal file index.php principale
+// Inclusione difensiva del database quando la pagina è aperta direttamente
+if (!class_exists('Database')) {
+    require_once __DIR__ . '/../config/database.php';
+}
 
-$db = Database::getInstance();
+$db = getDB();
 $page = $_GET['page'] ?? 'dashboard';
+
+// Se la pagina admin è aperta direttamente senza il routing principale,
+// reindirizza verso index.php con route=admin per includere header/footer e mantenere la GUI.
+if (!isset($_GET['route']) || $_GET['route'] !== 'admin') {
+    $targetPage = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
+    header('Location: ../index.php?route=admin&page=' . urlencode($targetPage));
+    exit;
+}
 
 // Endpoint JSON per aggiornare scorte basse in tempo reale
 if (($page === 'dashboard') && (isset($_GET['ajax']) && $_GET['ajax'] === 'low_stock')) {
@@ -68,7 +79,10 @@ if ($page === 'dashboard') {
                 <a href="?route=admin&page=categories" class="flex items-center px-3 py-2 rounded-md <?= $page === 'categories' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
                     <i class="fas fa-tags mr-3"></i><span>Categorie</span>
                 </a>
-                <a href="?route=report" class="flex items-center px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                <a href="<?= asset_path('sales.php') ?>" class="flex items-center px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-shopping-cart mr-3"></i><span>Vendite</span>
+                </a>
+                <a href="?route=admin&page=reports" class="flex items-center px-3 py-2 rounded-md <?= $page === 'reports' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
                     <i class="fas fa-chart-bar mr-3"></i><span>Report</span>
                 </a>
             </nav>
@@ -78,7 +92,7 @@ if ($page === 'dashboard') {
         <div class="flex-1">
             <!-- Topbar (card arrotondata staccata dalla sidebar) -->
             <div class="px-4 mb-2 md:mb-3">
-                <div class="bg-white ring-1 ring-gray-200/60 shadow-sm rounded-lg" style="border-bottom: 1px solid #2563eb;">
+                <div class="bg-white ring-1 ring-gray-200/60 shadow-sm rounded-lg" style="border-bottom: 2px solid #60a5fa;">
                     <div class="px-4 py-3 flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <button class="md:hidden inline-flex items-center px-2 py-1 rounded hover:bg-gray-100" @click="sidebarOpen = !sidebarOpen"><i class="fas fa-bars"></i></button>
@@ -101,7 +115,7 @@ if ($page === 'dashboard') {
                     <a href="?route=admin&page=categories" class="block px-3 py-2 rounded-md <?= $page === 'categories' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
                         <i class="fas fa-tags mr-2"></i>Categorie
                     </a>
-                    <a href="?route=report" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                    <a href="?route=admin&page=reports" class="block px-3 py-2 rounded-md <?= $page === 'reports' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100' ?>">
                         <i class="fas fa-chart-bar mr-2"></i>Report
                     </a>
                 </nav>
@@ -301,6 +315,9 @@ if ($page === 'dashboard') {
         
         <?php elseif ($page === 'categories'): ?>
             <?php include 'categories.php'; ?>
+        
+        <?php elseif ($page === 'reports'): ?>
+            <?php include 'reports.php'; ?>
         
         <?php endif; ?>
             </div>

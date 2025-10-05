@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* Sorgenti per la scansione classi Tailwind v4 (root progetto) */
+@source "../**/*.php";
+@source "../**/*.html";
+@source "../**/*.js";
+@source "../**/*.ts";
+@source "../**/*.jsx";
+@source "../**/*.tsx";
