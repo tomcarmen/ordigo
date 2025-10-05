@@ -2,6 +2,21 @@
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
+## Nuova UX selezione singoli e conferma aggiunta (v1.3.0)
+- Introduzione stato `pendingSingles` per selezione quantità singoli temporanea nelle card prodotto.
+- Pulsanti `+ / −` aggiornati per modificare solo il contatore pendente senza toccare il carrello.
+- Bottone `Aggiungi` ora chiama `confirmAdd(p, $event)`:
+  - Se c'è un'offerta selezionata, aggiunge il bundle e resetta `selectedOffer`.
+  - Altrimenti aggiunge la quantità pendente di singoli e azzera `pendingSingles`.
+- Etichetta `Singolo` nel carrello: mostrata solo per prodotti con offerte stock; non per prodotti con sole aggiunte.
+- Disabilitazione del bottone `Aggiungi` finché non c'è selezione offerta o quantità pendente > 0.
+- Dettaglio offerta accanto al nome nel carrello (es. `6x 5,00€`).
+
+Note tecniche:
+- Aggiunti metodi Alpine: `getPendingSingles`, `setPendingSingles`, `incPendingSingles`, `decPendingSingles`, `confirmAdd`.
+- `addToCart` aggiornata per resettare `selectedOffer` solo in caso di bundle.
+- UI card prodotto e drawer carrello aggiornati per riflettere le nuove condizioni di rendering.
+
 ## Correzioni stock extras e payload checkout
 - Problema: aggiungendo un hamburger con extras (es. due cheddar), lo stock dell’extra non veniva scalato correttamente.
 - Causa: gli extras venivano inviati al server senza una quantità propria; il server assumeva la quantità del prodotto o non interpretava correttamente.

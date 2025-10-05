@@ -112,3 +112,20 @@ Per supporto o domande, apri una issue su GitHub o contatta il team di sviluppo.
 ---
 
 Sviluppato con ❤️ per la comunità oratoriana
+
+## 🧾 Guida rapida POS vendite
+
+Questa sezione descrive il flusso aggiornato di selezione e aggiunta prodotti nella pagina vendite (`sales.php`).
+
+- Pulsanti `+ / −` sulle card prodotto: modificano solo la quantità "pendente" dei singoli articoli senza aggiungerli subito al carrello.
+- Bottone `Aggiungi`: conferma l'azione corrente.
+  - Se è selezionata un'offerta (bundle), aggiunge il pacchetto al carrello e resetta la selezione dell'offerta.
+  - Se non è selezionata un'offerta, aggiunge la quantità pendente di singoli articoli e azzera il contatore pendente.
+- Etichetta `Singolo` nel carrello: compare solo per prodotti che hanno offerte stock; non viene mostrata per prodotti senza offerte (es. solo aggiunte/extras).
+- Stato disabilitazione: `Aggiungi` è disabilitato finché non c'è una selezione valida (offerta oppure quantità pendente > 0).
+- Descrizione offerta in carrello: accanto al nome del prodotto viene visualizzato il dettaglio dell'offerta selezionata (es. `6x 5,00€`).
+
+Suggerimenti operativi:
+- Usa `+ / −` per impostare velocemente la quantità singola desiderata senza sporcare il carrello.
+- Premi `Aggiungi` per confermare: pacchetto se hai selezionato un'offerta, altrimenti i singoli.
+- La selezione offerta si resetta automaticamente solo dopo l'aggiunta di un bundle; i singoli non alterano la selezione delle offerte.
