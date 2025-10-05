@@ -278,7 +278,9 @@ require_once __DIR__ . '/templates/header.php';
       <div class="group rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden hover:shadow-md transition duration-300" :class="{'ring-primary': isLowStock(p)}">
         <div class="relative">
           <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-cover" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
-          <div class="absolute bottom-3 right-3 z-10 inline-flex items-center px-4 py-2 rounded-lg bg-black/70 text-white text-base font-semibold shadow" x-text="formatCurrency(p.price)"></div>
+          <div class="absolute bottom-3 right-3 z-10 inline-flex items-center px-4 py-2 rounded-lg bg-black/70 text-white text-base font-semibold shadow">
+            <span x-text="formatCurrency(unitTotal(p))"></span>
+          </div>
           <div class="absolute top-3 right-3 inline-flex items-center gap-2">
             <span class="px-4 py-2 rounded-xl text-lg font-semibold" :class="isLowStock(p) ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'" x-text="stockLabel(p)"></span>
           </div>
@@ -326,14 +328,14 @@ require_once __DIR__ . '/templates/header.php';
           </template>
 
           <div class="mt-4 flex items-center gap-2.5">
-            <button @click="addToCart(p, 1, $event)" :disabled="!canAddProduct(p)" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:bg-gray-300 text-white transition duration-200">
+            <button @click="confirmAdd(p, $event)" :disabled="!canAddProduct(p) || (!selectedOffer[p.id] && getPendingSingles(p)===0)" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:bg-gray-300 text-white transition duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M11 4h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
               <span>Aggiungi</span>
             </button>
             <div class="inline-flex items-center rounded-xl border overflow-hidden">
-              <button @click="addToCart(p, -1)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">-</button>
-              <div class="px-4 text-base min-w-[3rem] text-center" x-text="inCartQty(p)"></div>
-              <button @click="addToCart(p, 1)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">+</button>
+              <button @click="decPendingSingles(p)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">-</button>
+              <div class="px-4 text-base min-w-[3rem] text-center" x-text="getPendingSingles(p)"></div>
+              <button @click="incPendingSingles(p)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">+</button>
             </div>
           </div>
           
@@ -361,8 +363,16 @@ require_once __DIR__ . '/templates/header.php';
             <img :src="productImage(item)" class="h-12 w-12 rounded object-cover" />
             <div class="flex-1">
               <div class="flex items-center justify-between">
-                <span class="font-semibold text-sm" x-text="item.name"></span>
-                <span class="text-sm" x-text="formatCurrency((item.price * item.quantity) + ((item.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * item.quantity), 0)))"></span>
+                <div class="inline-flex items-center gap-2">
+                  <span class="font-semibold text-sm" x-text="item.name"></span>
+                  <template x-if="item.offer_id">
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800" x-text="offerLabel(item)"></span>
+                  </template>
+                  <template x-if="!item.offer_id && (products.find(pp=>pp.id===item.id)?.offers?.length>0)">
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-primary text-white">Singolo</span>
+                  </template>
+                </div>
+                <span class="text-sm" x-text="formatCurrency(itemTotal(item))"></span>
               </div>
               <template x-if="item.extras && item.extras.length>0">
                 <div class="mt-1 text-xs text-gray-600">
@@ -461,6 +471,7 @@ function posApp(categories, products){
     orderNumber: '',
     selectedOffer: {},
     selectedExtras: {},
+    pendingSingles: {},
     bumpCart: false,
     checkoutModalOpen: false,
 
@@ -538,6 +549,36 @@ function posApp(categories, products){
       return io === oo && a === b;
     },
 
+    // Helper: quantità e prezzo dell'offerta selezionata
+    getOffer(pid, offerId){
+      try {
+        const p = this.products.find(pp => pp.id === pid);
+        if (!p || !Array.isArray(p.offers)) return null;
+        return p.offers.find(o => o.id === offerId) || null;
+      } catch(e){ return null; }
+    },
+    getOfferQty(pid, offerId){
+      const o = this.getOffer(pid, offerId);
+      const q = o && (o.quantity || o.qty);
+      const n = Number(q || 0);
+      return Number.isFinite(n) && n > 0 ? n : 1;
+    },
+    getOfferPrice(pid, offerId){
+      const o = this.getOffer(pid, offerId);
+      const v = o && (o.offer_price ?? o.price);
+      const n = Number(v || 0);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    },
+
+    offerLabel(i){
+      try {
+        if (!i || !i.offer_id) return '';
+        const q = this.getOfferQty(i.id, i.offer_id);
+        const p = this.getOfferPrice(i.id, i.offer_id);
+        return `${q}x ${this.formatCurrency(p)}`;
+      } catch(e){ return ''; }
+    },
+
     // Quantità per aggiunte selezionate (extras)
     getExtraQty(pid, exId){
       // Con quantità fissa a 1, restituiamo sempre 1
@@ -550,15 +591,17 @@ function posApp(categories, products){
       // Quantità extras fissa a 1: nessuna azione
     },
 
-    addToCart(p, delta, evt){
+    addToCart(p, delta, evt, forceSingles = false){
       const step = delta || 1;
       // Determina variante corrente (offerta + aggiunte selezionate)
-      const offerId = this.selectedOffer[p.id] || null;
+      const selectedOfferId = this.selectedOffer[p.id] || null;
+      const offerId = forceSingles ? null : selectedOfferId;
       const extrasList = (this.selectedExtras[p.id]||[]).map(e=>({id:e.id,name:e.name,price:e.price,quantity:1}));
       // Trova item esistente con stessa variante
       let item = this.cart.find(i => i.id === p.id && this._sameVariant(i, offerId, extrasList));
       const currentQty = item ? (item.quantity||0) : 0;
-      const desiredQty = Math.max(0, currentQty + step);
+      const packQty = offerId ? this.getOfferQty(p.id, offerId) : 1;
+      const desiredQty = Math.max(0, currentQty + (step * packQty));
       // Verifica stock prodotto considerando tutte le varianti nel carrello
       const stock = typeof p.stock_quantity === 'number' ? p.stock_quantity : null;
       if (stock !== null) {
@@ -580,6 +623,10 @@ function posApp(categories, products){
         this.cart = this.cart.filter(i => !(i.id === p.id && this._sameVariant(i, offerId, extrasList)));
       }
       this.persist();
+      // Se il click proviene dal bottone "Aggiungi" e abbiamo aggiunto un bundle, azzera la selezione offerta
+      if (evt && offerId) {
+        this.selectedOffer[p.id] = null;
+      }
       // Microanimazione: bump sul bottone carrello
       if (step > 0) {
         this.bumpCart = true;
@@ -647,7 +694,9 @@ function posApp(categories, products){
     },
 
     removeItem(item){
-      this.cart = this.cart.filter(i => i.id !== item.id);
+      const offerId = item.offer_id || null;
+      const extrasList = (item.extras||[]).map(e=>({id:e.id,name:e.name,price:e.price,quantity:1}));
+      this.cart = this.cart.filter(i => !(i.id === item.id && this._sameVariant(i, offerId, extrasList)));
       this.persist();
     },
 
@@ -657,16 +706,81 @@ function posApp(categories, products){
 
     cartTotal(){
       return this.cart.reduce((sum, i) => {
-        const base = i.price * i.quantity;
-        const extras = (i.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * i.quantity), 0);
+        const qty = i.quantity || 0;
+        let base = 0;
+        if (i.offer_id) {
+          const packQty = this.getOfferQty(i.id, i.offer_id);
+          const packPrice = this.getOfferPrice(i.id, i.offer_id);
+          const packs = Math.floor(qty / packQty);
+          const remainder = qty % packQty;
+          base = (packs * packPrice) + (remainder * i.price);
+        } else {
+          base = i.price * qty;
+        }
+        const extras = (i.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * qty), 0);
         return sum + base + extras;
       }, 0);
     },
 
+    itemTotal(i){
+      const qty = i.quantity || 0;
+      let base = 0;
+      if (i.offer_id) {
+        const packQty = this.getOfferQty(i.id, i.offer_id);
+        const packPrice = this.getOfferPrice(i.id, i.offer_id);
+        const packs = Math.floor(qty / packQty);
+        const remainder = qty % packQty;
+        base = (packs * packPrice) + (remainder * i.price);
+      } else {
+        base = i.price * qty;
+      }
+      const extras = (i.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * qty), 0);
+      return base + extras;
+    },
+
     unitTotal(p){
+      const offerId = this.selectedOffer[p.id] || null;
+      if (offerId) {
+        const packQty = this.getOfferQty(p.id, offerId);
+        const packPrice = this.getOfferPrice(p.id, offerId);
+        const extras = (this.selectedExtras[p.id]||[]).reduce((s,e)=> s + ((e.price||0) * packQty), 0);
+        return (packPrice || 0) + extras;
+      }
       const base = p.price || 0;
       const extras = (this.selectedExtras[p.id]||[]).reduce((s,e)=> s + ((e.price||0) * 1), 0);
       return base + extras;
+    },
+
+    // Selettore quantità pendente per aggiunta singoli
+    getPendingSingles(p){
+      try { return Math.max(0, Number(this.pendingSingles[p.id] || 0)); } catch(e){ return 0; }
+    },
+    setPendingSingles(p, val){
+      const n = Math.max(0, Number(val || 0));
+      this.pendingSingles[p.id] = n;
+    },
+    incPendingSingles(p){
+      const cur = this.getPendingSingles(p);
+      this.setPendingSingles(p, cur + 1);
+    },
+    decPendingSingles(p){
+      const cur = this.getPendingSingles(p);
+      this.setPendingSingles(p, Math.max(0, cur - 1));
+    },
+    confirmAdd(p, evt){
+      const offerId = this.selectedOffer[p.id] || null;
+      if (offerId){
+        // Se è selezionata un'offerta, aggiunge un pacchetto
+        this.addToCart(p, 1, evt, false);
+        return;
+      }
+      const qty = this.getPendingSingles(p);
+      if (qty > 0){
+        // Aggiunge la quantità selezionata di singoli
+        this.addToCart(p, qty, evt, true);
+        // Reset dopo l'aggiunta
+        this.setPendingSingles(p, 0);
+      }
     },
 
     inCartQty(p){
