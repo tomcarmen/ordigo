@@ -33,6 +33,12 @@ class Database {
             $this->pdo = new PDO('sqlite:' . $this->dbPath);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            // Timeout attesa lock per operazioni di migrazione
+            $this->pdo->exec('PRAGMA busy_timeout = 20000');
+            // Modalità WAL per migliorare la concorrenza lettura/scrittura
+            $this->pdo->exec("PRAGMA journal_mode = WAL");
+            // Riduce contesa mantenendo performance
+            $this->pdo->exec("PRAGMA synchronous = NORMAL");
             
             // Abilita foreign keys
             $this->pdo->exec('PRAGMA foreign_keys = ON');
@@ -112,7 +118,7 @@ class Database {
             customer_phone VARCHAR(20),
             total_amount DECIMAL(10,2) NOT NULL,
             status TEXT CHECK(status IN ('pending', 'preparing', 'ready', 'completed', 'cancelled')) DEFAULT 'pending',
-            payment_method TEXT CHECK(payment_method IN ('cash', 'card', 'digital')) DEFAULT 'cash',
+            payment_method TEXT CHECK(payment_method IN ('Contanti', 'Bancomat', 'Satispay')) DEFAULT 'Contanti',
             notes TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             ready_at DATETIME,
@@ -244,6 +250,74 @@ class Database {
             }
         } catch (Exception $e) {
             error_log('Migrazione schema extras fallita: ' . $e->getMessage());
+        }
+
+        // Migrazione tabella orders: aggiorna CHECK di payment_method e mappa valori esistenti
+        try {
+            $stmt = $this->pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'");
+            $ordersSql = $stmt->fetchColumn();
+            if ($stmt) { $stmt->closeCursor(); }
+            if ($ordersSql) {
+                // Verifica se il nuovo CHECK con valori in italiano è presente
+                $normalized = strtolower(preg_replace('/\s+/', '', $ordersSql));
+                $hasNewCheck = strpos($normalized, "check(payment_methodin('contanti','bancomat','satispay'))") !== false;
+                if (!$hasNewCheck) {
+                    // Mappa valori vecchi a nuovi
+                    try {
+                        $this->pdo->exec("UPDATE orders SET payment_method = CASE payment_method WHEN 'cash' THEN 'Contanti' WHEN 'card' THEN 'Bancomat' WHEN 'digital' THEN 'Satispay' ELSE payment_method END");
+                    } catch (Exception $e) {
+                        // Ignora se tabella vuota
+                    }
+
+                    // Ricrea la tabella con nuovo CHECK preservando i dati
+                    $this->pdo->exec('PRAGMA foreign_keys = OFF');
+                    // Esegue checkpoint WAL per liberare lock residui
+                    try { $this->pdo->exec('PRAGMA wal_checkpoint(FULL)'); } catch (Exception $e) {}
+                    $this->pdo->beginTransaction();
+                    $this->pdo->exec("
+                        CREATE TABLE IF NOT EXISTS orders_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            order_number VARCHAR(20) UNIQUE NOT NULL,
+                            customer_name VARCHAR(200),
+                            customer_phone VARCHAR(20),
+                            total_amount DECIMAL(10,2) NOT NULL,
+                            status TEXT CHECK(status IN ('pending', 'preparing', 'ready', 'completed', 'cancelled')) DEFAULT 'pending',
+                            payment_method TEXT CHECK(payment_method IN ('Contanti', 'Bancomat', 'Satispay')) DEFAULT 'Contanti',
+                            notes TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            ready_at DATETIME,
+                            completed_at DATETIME
+                        );
+                    ");
+                    $this->pdo->exec("
+                        INSERT INTO orders_new (id, order_number, customer_name, customer_phone, total_amount, status, payment_method, notes, created_at, ready_at, completed_at)
+                        SELECT id, order_number, customer_name, customer_phone, total_amount, status,
+                               CASE payment_method
+                                   WHEN 'cash' THEN 'Contanti'
+                                   WHEN 'card' THEN 'Bancomat'
+                                   WHEN 'digital' THEN 'Satispay'
+                                   ELSE payment_method
+                               END as payment_method,
+                               notes, created_at, ready_at, completed_at FROM orders
+                    ");
+                    $this->pdo->exec("DROP TABLE orders");
+                    $this->pdo->exec("ALTER TABLE orders_new RENAME TO orders");
+                    // Ricrea indici
+                    $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)");
+                    $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at)");
+                    $this->pdo->commit();
+                    $this->pdo->exec('PRAGMA foreign_keys = ON');
+                } else {
+                    // Effettua comunque mapping di eventuali valori vecchi
+                    try {
+                        $this->pdo->exec("UPDATE orders SET payment_method = CASE payment_method WHEN 'cash' THEN 'Contanti' WHEN 'card' THEN 'Bancomat' WHEN 'digital' THEN 'Satispay' ELSE payment_method END");
+                    } catch (Exception $e) {}
+                }
+            }
+        } catch (Exception $e) {
+            try { $this->pdo->rollBack(); } catch (Exception $ee) {}
+            $this->pdo->exec('PRAGMA foreign_keys = ON');
+            error_log('Migrazione schema orders fallita: ' . $e->getMessage());
         }
     }
     

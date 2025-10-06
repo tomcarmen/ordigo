@@ -1,0 +1,10 @@
+database/*.db
+database/*.db-shm
+database/*.db-wal
+ordigo.code-workspace
+uploads/products/*
+!uploads/products/.gitkeep
+node_modules/
+vendor/
+/.DS_Store
+Thumbs.db

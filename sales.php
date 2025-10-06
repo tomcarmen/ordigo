@@ -61,7 +61,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'checkout' && $_SERVER['REQUEST_ME
             echo json_encode(['ok' => false, 'error' => 'Metodo di pagamento obbligatorio']);
             exit;
         }
-        if (!in_array($paymentMethod, ['cash', 'card', 'digital'], true)) {
+        if (!in_array($paymentMethod, ['Contanti', 'Bancomat', 'Satispay'], true)) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'error' => 'Metodo di pagamento non valido']);
             exit;
@@ -538,20 +538,20 @@ require_once __DIR__ . '/templates/header.php';
           <label class="text-sm text-gray-700">Tipo di pagamento</label>
           <div class="mt-1 flex items-center gap-2.5 text-sm">
             <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
-                   :class="paymentMethod==='cash' ? 'bg-green-600 text-white shadow-sm ring-2 ring-green-300' : 'bg-green-50 text-green-700 ring-1 ring-green-200'">
-              <input type="radio" class="sr-only" x-model="paymentMethod" value="cash" />
+                   :class="paymentMethod==='Contanti' ? 'bg-green-600 text-white shadow-sm ring-2 ring-green-300' : 'bg-green-50 text-green-700 ring-1 ring-green-200'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="Contanti" />
               <i class="fas fa-money-bill-wave"></i>
               <span>Contanti</span>
             </label>
             <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
-                   :class="paymentMethod==='card' ? 'bg-black text-white shadow-sm ring-2 ring-gray-400' : 'bg-gray-100 text-gray-800 ring-1 ring-gray-300'">
-              <input type="radio" class="sr-only" x-model="paymentMethod" value="card" />
+                   :class="paymentMethod==='Bancomat' ? 'bg-black text-white shadow-sm ring-2 ring-gray-400' : 'bg-gray-100 text-gray-800 ring-1 ring-gray-300'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="Bancomat" />
               <i class="fas fa-credit-card"></i>
               <span>Bancomat</span>
             </label>
             <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
-                   :class="paymentMethod==='digital' ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-300' : 'bg-red-50 text-red-700 ring-1 ring-red-200'">
-              <input type="radio" class="sr-only" x-model="paymentMethod" value="digital" />
+                   :class="paymentMethod==='Satispay' ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-300' : 'bg-red-50 text-red-700 ring-1 ring-red-200'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="Satispay" />
               <i class="fas fa-mobile-alt"></i>
               <span>Satispay</span>
             </label>

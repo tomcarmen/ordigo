@@ -112,6 +112,18 @@ switch ($period) {
 }
 $trend_data = $stmt->fetchAll();
 
+// Totali per metodo di pagamento
+$stmt = $db->query("
+    SELECT 
+        payment_method,
+        COUNT(*) as orders_count,
+        COALESCE(SUM(total_amount), 0) as total_revenue
+    FROM orders 
+    WHERE DATE(created_at) BETWEEN ? AND ? AND status IN ('completed','preparing','ready')
+    GROUP BY payment_method
+", [$date_from, $date_to]);
+$payment_stats = $stmt->fetchAll();
+
 // Scorte basse
 $stmt = $db->query("
     SELECT 
@@ -286,6 +298,40 @@ $categories = $stmt->fetchAll();
                 <canvas id="categoryChart"></canvas>
             </div>
         </div>
+    </div>
+
+    <!-- Totali per metodo di pagamento -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <?php
+        // Prepara mappa per mostrare anche metodi con zero
+        $pmOrder = ['Contanti', 'Bancomat', 'Satispay'];
+        $pmMap = ['Contanti' => ['orders_count' => 0, 'total_revenue' => 0], 'Bancomat' => ['orders_count' => 0, 'total_revenue' => 0], 'Satispay' => ['orders_count' => 0, 'total_revenue' => 0]];
+        foreach ($payment_stats as $ps) {
+            $pm = $ps['payment_method'];
+            if (isset($pmMap[$pm])) { $pmMap[$pm] = ['orders_count' => (int)$ps['orders_count'], 'total_revenue' => (float)$ps['total_revenue']]; }
+        }
+        $pmClasses = [
+            'Contanti' => ['icon' => 'fa-money-bill-wave', 'bg' => 'bg-green-100', 'text' => 'text-green-700'],
+            'Bancomat' => ['icon' => 'fa-credit-card', 'bg' => 'bg-gray-100', 'text' => 'text-gray-800'],
+            'Satispay' => ['icon' => 'fa-wallet', 'bg' => 'bg-red-100', 'text' => 'text-red-700'],
+        ];
+        foreach ($pmOrder as $pm):
+            $cls = $pmClasses[$pm];
+            $vals = $pmMap[$pm];
+        ?>
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full <?= $cls['bg'] ?> <?= $cls['text'] ?>">
+                    <i class="fas <?= $cls['icon'] ?> text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600"><?= $pm ?></p>
+                    <p class="text-2xl font-semibold text-gray-900">€<?= number_format($vals['total_revenue'], 2) ?></p>
+                    <p class="text-xs text-gray-500"><?= number_format($vals['orders_count']) ?> ordini</p>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -245,7 +245,7 @@ $chartData = getChartData($db);
                     <i class="fas fa-chart-bar text-3xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-700">OrdiGO Dashboard</h1>
+<h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-700">ÒrdiGO Dashboard</h1>
                     <p class="text-gray-600 text-lg">Sistema di Gestione Ordini in Tempo Reale</p>
                 </div>
             </div>

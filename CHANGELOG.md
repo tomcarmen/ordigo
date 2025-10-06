@@ -1,4 +1,4 @@
-# Ordigo POS – Changelog modifiche recenti
+# OrdiGO POS – Changelog modifiche recenti
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
@@ -76,4 +76,4 @@ Note tecniche:
 
 ## Versione
 - Data modifica: 2025-10-06
-- Autore: Team Ordigo
+- Autore: Team OrdiGO
