@@ -2,6 +2,17 @@
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
+## Migrazione ordini robusta e vincolo payment_method (v1.4.1)
+- Migrazione sbloccata e applicata con successo: aggiornato il `CHECK` su `orders.payment_method` con valori italiani (`Contanti`, `Bancomat`, `Satispay`) e mapping dai vecchi valori (`cash`, `card`, `digital`).
+- Robustezza SQLite: aumentato `PRAGMA busy_timeout` a `20000`, confermato `PRAGMA journal_mode = WAL`, impostato `PRAGMA synchronous = NORMAL`, aggiunto `wal_checkpoint(FULL)` prima delle transazioni critiche per ridurre i blocchi.
+- Gestione cursori: chiusura esplicita dei cursori prima di `BEGIN` nelle migrazioni per evitare lock ricorrenti.
+- Script strumenti:
+  - `tools/force_orders_migration.php`: ricrea la tabella `orders` con il nuovo vincolo e mappa i valori legacy.
+  - `tools/db_check.php`: diagnostica schema e valori distinti dei metodi di pagamento.
+  - `tools/test_insert_contanti.php`: test di inserimento con `payment_method = 'Contanti'` e rollback.
+- Operativo: aggiunto `.gitignore` per artefatti SQLite (`*.db-wal`, `*.db-shm`, ecc.).
+- Verifiche: esecuzione degli script diagnostici e di test con esito positivo.
+
 ## Metodi di pagamento obbligatori e gestione duplicati (v1.4.0)
 - Metodo di pagamento ora obbligatorio: nessuna preselezione all’apertura del modal.
 - Validazione client: messaggio di errore inline sotto i chip di pagamento e pulsante Conferma disabilitato finché non selezionato.
