@@ -38,19 +38,47 @@
         // Gestione offline
         let isOnline = navigator.onLine;
         let syncQueue = [];
+        let isSyncing = false;
 
         // Controlla stato connessione
         function updateConnectionStatus() {
-            const indicator = document.querySelector('.w-3.h-3');
-            const statusText = indicator.nextElementSibling;
+            const indicator = document.getElementById('topbar-connection-indicator');
+            const statusText = document.getElementById('topbar-connection-text');
+            const syncText = document.getElementById('topbar-sync-text');
             
-            if (navigator.onLine) {
-                indicator.className = 'w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse';
-                statusText.textContent = 'Online';
-                processSyncQueue();
-            } else {
-                indicator.className = 'w-3 h-3 bg-yellow-500 rounded-full mr-2';
-                statusText.textContent = 'Offline';
+            if (indicator) {
+                if (navigator.onLine) {
+                    indicator.className = 'w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse';
+                    if (statusText) statusText.textContent = 'Online';
+                    if (syncText) syncText.textContent = isSyncing ? 'In attesa' : 'Sincronizzato';
+                    processSyncQueue();
+                } else {
+                    indicator.className = 'w-3 h-3 bg-yellow-500 rounded-full mr-2';
+                    if (statusText) statusText.textContent = 'Offline';
+                    if (syncText) syncText.textContent = syncQueue.length > 0 ? 'In attesa' : 'Offline';
+                }
+            }
+        }
+
+        // Aggiorna etichetta di sincronizzazione manualmente
+        function updateSyncLabel() {
+            const syncText = document.getElementById('topbar-sync-text');
+            const syncIcon = document.getElementById('topbar-sync-icon');
+            if (!syncText) return;
+            if (!navigator.onLine) {
+                const pending = syncQueue.length > 0;
+                syncText.textContent = pending ? 'In attesa' : 'Offline';
+                if (syncIcon) {
+                    syncIcon.classList.toggle('hidden', !pending);
+                    syncIcon.classList.remove('animate-spin');
+                }
+                return;
+            }
+            const syncing = isSyncing;
+            syncText.textContent = syncing ? 'In attesa' : 'Sincronizzato';
+            if (syncIcon) {
+                syncIcon.classList.toggle('hidden', !syncing);
+                syncIcon.classList.toggle('animate-spin', syncing);
             }
         }
 
@@ -72,6 +100,8 @@
         // Processa la coda di sincronizzazione quando torna online
         function processSyncQueue() {
             if (syncQueue.length === 0) return;
+            isSyncing = true;
+            updateSyncLabel();
             
             syncQueue.forEach(async (operation, index) => {
                 try {
@@ -87,11 +117,14 @@
                         syncQueue.splice(index, 1);
                         localStorage.setItem('ordigo_sync_queue', JSON.stringify(syncQueue));
                         updateLastSync();
+                        updateSyncLabel();
                     }
                 } catch (error) {
                     console.error('Errore sincronizzazione:', error);
                 }
             });
+            isSyncing = false;
+            updateSyncLabel();
         }
 
         // Aggiorna timestamp ultimo sync
@@ -189,6 +222,7 @@
             updateConnectionStatus();
             loadSyncQueue();
             startAutoRefresh();
+            updateSyncLabel();
             
             // Gestione mobile menu spostata su Alpine.js in header
 

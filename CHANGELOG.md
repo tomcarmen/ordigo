@@ -2,6 +2,19 @@
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
+## Metodi di pagamento obbligatori e gestione duplicati (v1.4.0)
+- Metodo di pagamento ora obbligatorio: nessuna preselezione all’apertura del modal.
+- Validazione client: messaggio di errore inline sotto i chip di pagamento e pulsante Conferma disabilitato finché non selezionato.
+- Validazione server: rifiuto con HTTP 422 se `payment_method` mancante o non valido.
+- Numero comanda: gestione duplicati con controllo anticipato lato server e risposta HTTP 409; messaggio inline sotto l’input.
+- Altre validazioni confermate: numero comanda numerico e nome cliente obbligatorio.
+- UI modernizzata per i metodi di pagamento: chip arrotondati con icone, transizioni e colori coerenti.
+
+Note tecniche:
+- `sales.php?ajax=checkout`: aggiunta verifica `payment_method` obbligatorio/valido; controllo duplicato `order_number` prima della transazione.
+- Alpine state: `paymentMethod` inizializzato a stringa vuota; aggiunta `paymentMethodError` e feedback inline.
+- Payload: rimosso default di fallback sul client; inviato `payment_method` scelto.
+
 ## Nuova UX selezione singoli e conferma aggiunta (v1.3.0)
 - Introduzione stato `pendingSingles` per selezione quantità singoli temporanea nelle card prodotto.
 - Pulsanti `+ / −` aggiornati per modificare solo il contatore pendente senza toccare il carrello.

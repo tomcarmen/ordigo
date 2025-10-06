@@ -131,16 +131,16 @@
                 
                 <!-- Status indicators -->
                 <div class="flex items-center space-x-4">
-                    <!-- Offline indicator -->
+                    <!-- Connessione: indicatore topbar con testo stacked -->
                     <div class="flex items-center text-sm">
-                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                        <span class="text-gray-600">Offline Ready</span>
-                    </div>
-                    
-                    <!-- Sync status -->
-                    <div class="flex items-center text-sm">
-                        <i class="fas fa-sync-alt text-gray-400 mr-2"></i>
-                        <span class="text-gray-600">Sincronizzato</span>
+                        <div id="topbar-connection-indicator" class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                        <div class="flex flex-col leading-tight">
+                            <span id="topbar-connection-text" class="text-gray-700 font-medium">Online</span>
+                            <span class="text-gray-500 flex items-center">
+                                <i id="topbar-sync-icon" class="fas fa-sync-alt text-gray-400 mr-1 hidden"></i>
+                                <span id="topbar-sync-text">Sincronizzato</span>
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Mobile menu button -->
@@ -168,8 +168,7 @@
         </div>
     </nav>
 
-    <!-- Indicatore stato connessione -->
-    <div id="connection-status" class="connection-status online">Online</div>
+    <!-- Indicatore stato connessione rimosso (usiamo solo quello in topbar) -->
 
     <!-- Main content -->
     <main class="<?= ($route == 'admin') ? 'py-6 px-4' : 'max-w-7xl mx-auto py-6 sm:px-6 lg:px-8' ?>">

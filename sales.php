@@ -39,12 +39,43 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'checkout' && $_SERVER['REQUEST_ME
         echo json_encode(['ok' => false, 'error' => 'Numero comanda obbligatorio']);
         exit;
     }
+    if (!preg_match('/^\d+$/', $orderNumber)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'Il numero comanda deve essere numerico']);
+        exit;
+    }
     $customerName = isset($payload['customer_name']) ? trim($payload['customer_name']) : '';
-    $paymentMethod = isset($payload['payment_method']) ? $payload['payment_method'] : 'cash';
+    if ($customerName === '') {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'Nome cliente obbligatorio']);
+        exit;
+    }
+    $paymentMethod = isset($payload['payment_method']) ? trim($payload['payment_method']) : '';
     $notes = isset($payload['notes']) ? trim($payload['notes']) : null;
     $items = $payload['items'];
 
     try {
+        // Validazione metodo di pagamento obbligatorio e consentito
+        if ($paymentMethod === '') {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'error' => 'Metodo di pagamento obbligatorio']);
+            exit;
+        }
+        if (!in_array($paymentMethod, ['cash', 'card', 'digital'], true)) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'error' => 'Metodo di pagamento non valido']);
+            exit;
+        }
+
+        // Verifica duplicato numero comanda prima di procedere
+        $existsStmt = $db->query("SELECT id FROM orders WHERE order_number = ? LIMIT 1", [$orderNumber]);
+        $existingOrder = $existsStmt->fetch();
+        if ($existingOrder) {
+            http_response_code(409);
+            echo json_encode(['ok' => false, 'error' => 'Numero comanda già esistente. Scegli un nuovo numero.']);
+            exit;
+        }
+
         $db->beginTransaction();
 
         // Calcolo totale lato server con prezzi correnti DB e offerte/extras
@@ -275,7 +306,7 @@ require_once __DIR__ . '/templates/header.php';
   <!-- Griglia prodotti -->
   <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5">
     <template x-for="p in filteredProducts()" :key="p.id">
-      <div class="group rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden hover:shadow-md transition duration-300" :class="{'ring-primary': isLowStock(p)}">
+      <div class="group rounded-2xl bg-white shadow-sm ring-1 overflow-hidden hover:shadow-md transition duration-300" :class="isLowStock(p) ? 'ring-red-500' : 'ring-primary'">
         <div class="relative">
           <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-cover" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
           <div class="absolute bottom-3 right-3 z-10 inline-flex items-center px-4 py-2 rounded-lg bg-black/70 text-white text-base font-semibold shadow">
@@ -348,9 +379,17 @@ require_once __DIR__ . '/templates/header.php';
   <div class="fixed inset-0 z-40" x-show="cartOpen" x-transition.opacity>
     <div class="absolute inset-0 bg-black/40" @click="toggleCart()"></div>
     <div class="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
-      <div class="p-4 border-b flex items-center justify-between">
-        <h2 class="font-bold text-lg">Carrello</h2>
-        <button @click="toggleCart()" class="rounded-md p-2 hover:bg-gray-100">
+                <div class="p-4 border-b flex items-center justify-between bg-primary text-white shadow-sm filter brightness-60">
+        <div class="flex items-center gap-3">
+          <h2 class="font-bold text-lg">Carrello</h2>
+          <button @click="receiptMode = !receiptMode; try { sessionStorage.setItem('pos_receipt_mode', receiptMode ? '1' : '0'); } catch (e) {}" class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20 border border-white/20">
+            <span class="inline-flex items-center gap-1">
+              <i class="fas fa-receipt"></i>
+              <span x-text="receiptMode ? 'Modalità scontrino' : 'Modalità dettagli'"></span>
+            </span>
+          </button>
+        </div>
+        <button @click="toggleCart()" class="rounded-md p-2 hover:bg-white/10 text-white">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
@@ -358,40 +397,103 @@ require_once __DIR__ . '/templates/header.php';
         <template x-if="cart.length === 0">
           <p class="text-gray-500">Il carrello è vuoto</p>
         </template>
-        <template x-for="item in cart" :key="item.id + '-' + (item.offer_id || 'none') + '-' + ((item.extras||[]).map(e=>e.id).sort().join('_'))">
-          <div class="flex items-center gap-3 p-3 rounded-lg border">
-            <img :src="productImage(item)" class="h-12 w-12 rounded object-cover" />
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <div class="inline-flex items-center gap-2">
-                  <span class="font-semibold text-sm" x-text="item.name"></span>
-                  <template x-if="item.offer_id">
-                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800" x-text="offerLabel(item)"></span>
-                  </template>
-                  <template x-if="!item.offer_id && (products.find(pp=>pp.id===item.id)?.offers?.length>0)">
-                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-primary text-white">Singolo</span>
-                  </template>
+        <!-- Modalità scontrino: lista compatta -->
+        <template x-if="receiptMode">
+          <div>
+            <template x-for="group in groupedCart()" :key="'cat-r-' + group.id">
+              <div class="mb-2">
+                <div class="sticky top-0 bg-white py-1 z-10 text-xs uppercase tracking-wide text-gray-500 flex items-center">
+                  <span class="inline-block w-2 h-2 rounded-full mr-2" :style="'background:'+group.color"></span>
+                  <span x-text="group.name"></span>
                 </div>
-                <span class="text-sm" x-text="formatCurrency(itemTotal(item))"></span>
+                <ul class="divide-y divide-gray-200 border-t border-b border-dashed border-gray-300 font-mono text-[13px]">
+                  <template x-for="item in group.items" :key="item.id + '-' + (item.offer_id || 'none') + '-' + ((item.extras||[]).map(e=>e.id).sort().join('_'))">
+                    <li class="py-1.5">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1">
+                          <div class="flex items-center">
+                            <img :src="productImage(item)" class="h-12 w-12 rounded object-cover mr-2 flex-shrink-0" />
+                            <span class="truncate max-w-[60%]" x-text="products.find(p=>p.id===item.id)?.name || item.name"></span>
+                            <template x-if="item.offer_id">
+                              <span class="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800" x-text="offerLabel(item)"></span>
+                            </template>
+                            <span class="ml-2 px-1.5 rounded bg-gray-100 text-gray-700 text-[12px]" x-text="'x ' + packCount(item)"></span>
+                          </div>
+                          <template x-if="item.extras && item.extras.length>0">
+                            <div class="mt-0.5 text-[12px] text-gray-600">
+                              <template x-for="ex in item.extras" :key="ex.id">
+                                <div class="flex items-center justify-between">
+                                  <span>+ <span x-text="ex.name"></span></span>
+                                  <span x-text="formatCurrency((ex.price||0) * (ex.quantity||1) * (item.quantity||0))"></span>
+                                </div>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                        <div class="text-right">
+                          <div class="font-semibold" x-text="formatCurrency(itemTotal(item))"></div>
+                          <div class="mt-1 inline-flex items-center gap-1">
+                            <button @click="changeQty(item, -1)" class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-[12px]">-</button>
+                            <button @click="changeQty(item, 1)" class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-[12px]">+</button>
+                            <button @click="removeItem(item)" class="ml-1 text-red-600 hover:underline text-[12px]">Rimuovi</button>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  </template>
+                </ul>
               </div>
-              <template x-if="item.extras && item.extras.length>0">
-                <div class="mt-1 text-xs text-gray-600">
-                  <template x-for="ex in item.extras" :key="ex.id">
-                    <div class="flex items-center justify-between">
-                      <span x-text="ex.name"></span>
-                      <span x-text="formatCurrency(ex.price * (ex.quantity||1) * item.quantity)"></span>
+            </template>
+          </div>
+        </template>
+        <template x-if="!receiptMode">
+          <template x-for="group in groupedCart()" :key="'cat-' + group.id">
+          <div class="space-y-2">
+            <div class="sticky top-0 bg-white py-1 z-10">
+              <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white" :style="`border: 1px solid ${group.color}; color: ${group.color}`" x-text="group.name"></span>
+            </div>
+            <template x-for="item in group.items" :key="item.id + '-' + (item.offer_id || 'none') + '-' + ((item.extras||[]).map(e=>e.id).sort().join('_'))">
+              <div class="flex items-center gap-3 p-3 rounded-lg border">
+                <img :src="productImage(item)" class="h-12 w-12 rounded object-cover" />
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="inline-flex items-center gap-2">
+                      <span class="font-semibold text-sm" x-text="item.name"></span>
+                      <template x-if="item.offer_id">
+                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800" x-text="offerLabel(item)"></span>
+                      </template>
+                      <template x-if="!item.offer_id && (products.find(pp=>pp.id===item.id)?.offers?.length>0)">
+                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-primary text-white">Singolo</span>
+                      </template>
+                    </div>
+                    <span class="text-sm" x-text="formatCurrency(itemTotal(item))"></span>
+                  </div>
+                  <template x-if="item.extras && item.extras.length>0">
+                    <div class="mt-1 text-xs text-gray-600">
+                      <template x-for="ex in item.extras" :key="ex.id">
+                        <div class="flex items-center justify-between">
+                          <span x-text="ex.name"></span>
+                          <span x-text="formatCurrency(ex.price * (ex.quantity||1) * item.quantity)"></span>
+                        </div>
+                      </template>
                     </div>
                   </template>
+                  <div class="mt-2 flex items-center gap-2">
+                    <button @click="changeQty(item, -1)" class="h-8 w-8 rounded bg-gray-100 hover:bg-gray-200">-</button>
+                    <template x-if="item.offer_id">
+                      <input type="number" min="1" :value="packCount(item)" @input="setPackCount(item, $event.target.value)" class="w-16 text-center border rounded" />
+                    </template>
+                    <template x-if="!item.offer_id">
+                      <input type="number" min="1" x-model.number="item.quantity" class="w-16 text-center border rounded" />
+                    </template>
+                    <button @click="changeQty(item, 1)" class="h-8 w-8 rounded bg-gray-100 hover:bg-gray-200">+</button>
+                    <button @click="removeItem(item)" class="ml-auto text-primary hover:underline text-sm">Rimuovi</button>
+                  </div>
                 </div>
-              </template>
-              <div class="mt-2 flex items-center gap-2">
-                <button @click="changeQty(item, -1)" class="h-8 w-8 rounded bg-gray-100 hover:bg-gray-200">-</button>
-                <input type="number" min="1" x-model.number="item.quantity" class="w-16 text-center border rounded" />
-                <button @click="changeQty(item, 1)" class="h-8 w-8 rounded bg-gray-100 hover:bg-gray-200">+</button>
-                <button @click="removeItem(item)" class="ml-auto text-primary hover:underline text-sm">Rimuovi</button>
               </div>
-            </div>
+            </template>
           </div>
+          </template>
         </template>
       </div>
       <div class="border-t p-4 space-y-3">
@@ -400,16 +502,15 @@ require_once __DIR__ . '/templates/header.php';
           <span class="font-bold" x-text="formatCurrency(cartTotal())"></span>
         </div>
         <div class="flex items-center gap-3">
+          <button @click="openCheckoutModal()" :disabled="cart.length===0" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 12h14v2H5zm0-4h14v2H5zm0 8h14v2H5z"/></svg>
+            <span>Conferma e incassa</span>
+          </button>
           <button @click="clearCart()" :disabled="cart.length===0" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm2 4h14l-1.5 9.5a2 2 0 01-2 1.5h-7a2 2 0 01-2-1.5L5 10zm5-6h4l1 2H9l1-2z"/></svg>
             <span>Svuota carrello</span>
           </button>
         </div>
-        <button @click="openCheckoutModal()" :disabled="cart.length===0" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 12h14v2H5zm0-4h14v2H5zm0 8h14v2H5z"/></svg>
-          <span>Conferma e incassa</span>
-        </button>
-        <p class="text-xs text-gray-500">Al confermare, l’ordine viene inserito nel DB.</p>
       </div>
     </div>
   </div>
@@ -426,19 +527,36 @@ require_once __DIR__ . '/templates/header.php';
       <div class="p-4 space-y-3">
         <div>
           <label class="text-sm text-gray-700">Numero comanda</label>
-          <input type="text" x-model="orderNumber" placeholder="Numero comanda (obbligatorio)" class="mt-1 w-full rounded border px-3 py-2" />
-        </div>
-        <div>
-          <label class="text-sm text-gray-700">Tipo di pagamento</label>
-          <div class="mt-1 flex items-center gap-4 text-sm">
-            <label class="inline-flex items-center gap-2"><input type="radio" x-model="paymentMethod" value="cash" /> <span>Contanti</span></label>
-            <label class="inline-flex items-center gap-2"><input type="radio" x-model="paymentMethod" value="card" /> <span>Bancomat</span></label>
-            <label class="inline-flex items-center gap-2"><input type="radio" x-model="paymentMethod" value="digital" /> <span>Satispay</span></label>
-          </div>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="1" x-model.number="orderNumber" x-ref="orderNumberInput" @input="orderNumberError=''" placeholder="Numero comanda (obbligatorio)" class="mt-1 w-full rounded border px-3 py-2 focus:outline-none" :class="orderNumberError ? 'border-red-500 ring-1 ring-red-300 focus:ring-red-300' : ''" :aria-invalid="orderNumberError ? 'true' : 'false'" />
+          <p x-show="orderNumberError" x-text="orderNumberError" class="mt-1 text-sm text-red-600"></p>
         </div>
         <div>
           <label class="text-sm text-gray-700">Nome cliente</label>
-          <input type="text" x-model="customerName" placeholder="Nome cliente (opzionale)" class="mt-1 w-full rounded border px-3 py-2" />
+          <input type="text" x-model.trim="customerName" placeholder="Nome cliente (obbligatorio)" required class="mt-1 w-full rounded border px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Tipo di pagamento</label>
+          <div class="mt-1 flex items-center gap-2.5 text-sm">
+            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+                   :class="paymentMethod==='cash' ? 'bg-green-600 text-white shadow-sm ring-2 ring-green-300' : 'bg-green-50 text-green-700 ring-1 ring-green-200'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="cash" />
+              <i class="fas fa-money-bill-wave"></i>
+              <span>Contanti</span>
+            </label>
+            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+                   :class="paymentMethod==='card' ? 'bg-black text-white shadow-sm ring-2 ring-gray-400' : 'bg-gray-100 text-gray-800 ring-1 ring-gray-300'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="card" />
+              <i class="fas fa-credit-card"></i>
+              <span>Bancomat</span>
+            </label>
+            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+                   :class="paymentMethod==='digital' ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-300' : 'bg-red-50 text-red-700 ring-1 ring-red-200'">
+              <input type="radio" class="sr-only" x-model="paymentMethod" value="digital" />
+              <i class="fas fa-mobile-alt"></i>
+              <span>Satispay</span>
+            </label>
+          </div>
+          <p x-show="paymentMethodError" x-text="paymentMethodError" class="mt-1 text-sm text-red-600"></p>
         </div>
         <div class="pt-2 flex items-center justify-between">
           <span class="text-gray-600">Totale</span>
@@ -446,7 +564,7 @@ require_once __DIR__ . '/templates/header.php';
         </div>
         <div class="flex items-center justify-end gap-2 pt-1">
           <button @click="checkoutModalOpen=false" class="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Annulla</button>
-          <button @click="checkout()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white">
+          <button @click="checkout()" :disabled="!paymentMethod" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:text-gray-600">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 12h14v2H5zm0-4h14v2H5zm0 8h14v2H5z"/></svg>
             <span>Conferma</span>
           </button>
@@ -466,7 +584,8 @@ function posApp(categories, products){
     search: '',
     cart: [],
     cartOpen: false,
-    paymentMethod: 'cash',
+    receiptMode: true,
+    paymentMethod: '',
     customerName: '',
     orderNumber: '',
     selectedOffer: {},
@@ -474,16 +593,25 @@ function posApp(categories, products){
     pendingSingles: {},
     bumpCart: false,
     checkoutModalOpen: false,
+    orderNumberError: '',
+    paymentMethodError: '',
 
     init(){
       // Ripristina carrello
       try {
         const saved = sessionStorage.getItem('pos_cart');
         if (saved) this.cart = JSON.parse(saved);
+        const rm = sessionStorage.getItem('pos_receipt_mode');
+        if (rm !== null) {
+          this.receiptMode = rm === '1';
+        } else {
+          // Persisti default in sessione per coerenza tra ricarichi
+          sessionStorage.setItem('pos_receipt_mode', this.receiptMode ? '1' : '0');
+        }
       } catch (e) {}
       // Polling stock
       this.pollStock();
-      this._pollTimer = setInterval(()=>this.pollStock(), 8000);
+      this._pollTimer = setInterval(()=>this.pollStock(), 3000);
     },
 
     persist(){
@@ -568,6 +696,32 @@ function posApp(categories, products){
       const v = o && (o.offer_price ?? o.price);
       const n = Number(v || 0);
       return Number.isFinite(n) && n >= 0 ? n : 0;
+    },
+
+    // Gestione pacchetti (stock) quando è selezionata un'offerta
+    packQty(item){
+      try {
+        return (item && item.offer_id) ? this.getOfferQty(item.id, item.offer_id) : 1;
+      } catch(e){ return 1; }
+    },
+    packCount(item){
+      try {
+        const pq = this.packQty(item);
+        const q = Math.max(0, Number(item && item.quantity || 0));
+        return (item && item.offer_id) ? Math.floor(q / pq) : q;
+      } catch(e){ return 0; }
+    },
+    setPackCount(item, count){
+      try {
+        const c = Math.max(1, Number(count || 1));
+        const pq = this.packQty(item);
+        if (item && item.offer_id) {
+          item.quantity = c * pq;
+        } else {
+          item.quantity = c;
+        }
+        this.persist();
+      } catch(e){}
     },
 
     offerLabel(i){
@@ -682,12 +836,22 @@ function posApp(categories, products){
 
     changeQty(item, delta){
       const p = this.products.find(pp => pp.id === item.id);
-      const step = delta || 0;
-      const desired = Math.max(1, (item.quantity || 1) + step);
+      const d = Number(delta || 0);
+      const unitStep = (item && item.offer_id) ? (this.packQty(item) * d) : d;
+      let desired = (item.quantity || ((item && item.offer_id) ? this.packQty(item) : 1)) + unitStep;
+      // Mantieni minimo 1 unità per singoli o 1 pacchetto per offerte
+      const minUnits = (item && item.offer_id) ? this.packQty(item) : 1;
+      desired = Math.max(minUnits, desired);
       const stock = p && typeof p.stock_quantity === 'number' ? p.stock_quantity : null;
       if (stock !== null && desired > stock){
         alert(`Scorta insufficiente. ${stock}`);
         return;
+      }
+      // Garantisce multipli del pacchetto quando presente un'offerta
+      if (item && item.offer_id) {
+        const pq = this.packQty(item);
+        const packs = Math.max(1, Math.round(desired / pq));
+        desired = packs * pq;
       }
       item.quantity = desired;
       this.persist();
@@ -698,6 +862,22 @@ function posApp(categories, products){
       const extrasList = (item.extras||[]).map(e=>({id:e.id,name:e.name,price:e.price,quantity:1}));
       this.cart = this.cart.filter(i => !(i.id === item.id && this._sameVariant(i, offerId, extrasList)));
       this.persist();
+    },
+
+    // Raggruppa il carrello per categoria dei prodotti
+    groupedCart(){
+      const byCat = {};
+      for (const item of this.cart){
+        const p = this.products.find(pp => pp.id === item.id);
+        const cid = (p && p.category_id) != null ? p.category_id : 'uncat';
+        const cat = this.categories.find(c => c.id === cid);
+        const name = cat ? (cat.name || 'Senza categoria') : 'Senza categoria';
+        const color = cat ? (cat.color || '#60a5fa') : '#9ca3af';
+        const key = String(cid);
+        if (!byCat[key]) byCat[key] = { id: cid, name, color, items: [] };
+        byCat[key].items.push(item);
+      }
+      return Object.values(byCat);
     },
 
     cartItemCount(){
@@ -851,8 +1031,13 @@ function posApp(categories, products){
 
     async checkout(){
       if (this.cart.length === 0) return;
-      if (!this.orderNumber || !String(this.orderNumber).trim()) { alert('Inserisci il numero comanda'); return; }
-      if (!this.paymentMethod) { alert('Seleziona il tipo di pagamento'); return; }
+      this.orderNumberError = '';
+      const orderStr = String(this.orderNumber).trim();
+      if (!orderStr) { this.orderNumberError = 'Numero comanda obbligatorio'; this.$nextTick(()=> this.$refs.orderNumberInput && this.$refs.orderNumberInput.focus()); return; }
+      if (!/^\d+$/.test(orderStr)) { this.orderNumberError = 'Il numero comanda deve essere numerico'; this.$nextTick(()=> this.$refs.orderNumberInput && this.$refs.orderNumberInput.focus()); return; }
+      const cust = String(this.customerName || '').trim();
+      if (!cust) { alert('Inserisci il nome cliente'); return; }
+      if (!this.paymentMethod) { this.paymentMethodError = 'Seleziona il tipo di pagamento'; return; }
       const payload = {
         items: this.cart.map(i => ({
           id: i.id,
@@ -860,9 +1045,9 @@ function posApp(categories, products){
           offer_id: i.offer_id || null,
           extras: (i.extras || []).map(e => ({ id: e.id, quantity: 1 * i.quantity }))
         })),
-        customer_name: this.customerName || null,
-        payment_method: this.paymentMethod || 'cash',
-        order_number: this.orderNumber
+        customer_name: cust,
+        payment_method: this.paymentMethod,
+        order_number: orderStr
       };
       try {
         const res = await fetch('sales.php?ajax=checkout', {
@@ -871,7 +1056,23 @@ function posApp(categories, products){
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Errore checkout');
+        if (!data.ok) {
+          if (res.status === 409) {
+            this.orderNumberError = data.error || 'Numero comanda già esistente';
+            this.$nextTick(()=> this.$refs.orderNumberInput && this.$refs.orderNumberInput.focus());
+            return;
+          }
+          if (res.status === 422 && (data.error || '').toLowerCase().includes('numero comanda')) {
+            this.orderNumberError = data.error;
+            this.$nextTick(()=> this.$refs.orderNumberInput && this.$refs.orderNumberInput.focus());
+            return;
+          }
+          if (res.status === 422 && (data.error || '').toLowerCase().includes('pagamento')) {
+            this.paymentMethodError = data.error;
+            return;
+          }
+          throw new Error(data.error || 'Errore checkout');
+        }
         // Reset carrello con animazione
         this.cart = [];
         this.persist();
