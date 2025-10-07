@@ -2,6 +2,12 @@
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
+## UI tabellone e modali spese (v1.5.0)
+- Tabellone "In preparazione": formattazione testo migliorata con due spazi fissi dopo i due punti e tra numero comanda e nome cliente; sfondo evidenziato in giallo intenso (`#f9d71c`) e numero comanda in rosso (`#dc2626`) per maggiore visibilità.
+- Spese generali: pagina semplificata mostrando solo il bottone "Aggiungi Spesa"; inserimento e modifica ora tramite finestre modali con precompilazione automatica per la modifica.
+- Integrazione modali: apertura/chiusura con backdrop-click ed ESC; submit puntano agli handler server-side esistenti (`action=create` / `action=update`).
+- Nessuna modifica al protocollo backend: gli endpoint PHP esistenti gestiscono `POST` come prima.
+
 ## Migrazione ordini robusta e vincolo payment_method (v1.4.1)
 - Migrazione sbloccata e applicata con successo: aggiornato il `CHECK` su `orders.payment_method` con valori italiani (`Contanti`, `Bancomat`, `Satispay`) e mapping dai vecchi valori (`cash`, `card`, `digital`).
 - Robustezza SQLite: aumentato `PRAGMA busy_timeout` a `20000`, confermato `PRAGMA journal_mode = WAL`, impostato `PRAGMA synchronous = NORMAL`, aggiunto `wal_checkpoint(FULL)` prima delle transazioni critiche per ridurre i blocchi.

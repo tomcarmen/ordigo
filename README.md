@@ -54,7 +54,7 @@ ordigo/
 │   ├── categories.php     # Gestione categorie
 │   ├── products.php       # Gestione prodotti
 │   ├── reports.php        # Report e statistiche
-│   └── projector.php      # Dashboard proiettore
+│   └── (rimosso)          # Dashboard proiettore
 ├── config/                # Configurazioni
 │   └── database.php       # Configurazione database
 ├── database/              # File database SQLite

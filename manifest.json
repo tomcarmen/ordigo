@@ -53,7 +53,7 @@
       "name": "Dashboard Proiettore",
       "short_name": "Proiettore",
       "description": "Visualizzazione ottimizzata per proiettore",
-      "url": "/admin/projector.php",
+    "url": "/",
       "icons": [
         {
           "src": "icons/icon-192x192.svg",

@@ -123,9 +123,13 @@
                         <a href="<?= asset_path('sales.php') ?>" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
                             <i class="fas fa-shopping-cart mr-2"></i>Vendite
                         </a>
-                        <a href="<?= asset_path('admin/projector.php') ?>" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors" target="_blank">
-                            <i class="fas fa-tv mr-2"></i>Dashboard Proiettore
+                        <a href="<?= asset_path('orders.php') ?>" class="<?= ($route == 'orders') ? 'border-primary text-primary' : 'border-transparent text-gray-600 hover:text-primary' ?> inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
+                            <i class="fas fa-clipboard-list mr-2"></i>Ordini
                         </a>
+                        <a href="<?= asset_path('tabellone.php') ?>" class="border-transparent text-gray-600 hover:text-primary inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors">
+                            <i class="fas fa-tv mr-2"></i>Tabellone
+                        </a>
+                        
                     </div>
                 </div>
                 
@@ -164,6 +168,12 @@
                 <a href="<?= asset_path('sales.php') ?>" class="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-shopping-cart mr-2"></i>Vendite
                 </a>
+                <a href="<?= asset_path('orders.php') ?>" class="<?= ($route == 'orders') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100' ?> block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-clipboard-list mr-2"></i>Ordini
+                </a>
+                <a href="<?= asset_path('tabellone.php') ?>" class="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-tv mr-2"></i>Tabellone
+                </a>
             </div>
         </div>
     </nav>
@@ -172,7 +182,8 @@
 
     <!-- Main content -->
     <main class="<?= ($route == 'admin') ? 'py-6 px-4' : 'max-w-7xl mx-auto py-6 sm:px-6 lg:px-8' ?>">
-        <!-- Alert per scorte basse -->
+        <!-- Alert per scorte basse (con fallback lato server e aggiornamento live) -->
+        <div id="global-low-stock-root">
         <?php
         try {
             $db = getDB();
@@ -193,9 +204,9 @@
                             <p class="text-sm text-red-700">
                                 <strong>Attenzione!</strong> I seguenti prodotti hanno scorte basse:
                             </p>
-                            <ul class="mt-2 text-sm text-red-600">
+                            <ul id="global-low-stock-list" class="mt-2 text-sm text-red-600">
                                 <?php foreach ($scorte_basse as $prodotto): ?>
-                                    <li>• <?= htmlspecialchars($prodotto['name']) ?> (<?= $prodotto['stock_quantity'] ?>/<?= $prodotto['min_stock_level'] ?>)</li>
+                                    <li>• <?= htmlspecialchars($prodotto['name']) ?> (<?= (int)$prodotto['stock_quantity'] ?>/<?= (int)$prodotto['min_stock_level'] ?>)</li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
@@ -206,3 +217,57 @@
             // Silently handle database errors
         }
         ?>
+        </div>
+        <script>
+        (function(){
+            function renderGlobalLowStock(data){
+                try {
+                    var root = document.getElementById('global-low-stock-root');
+                    if (!root) return;
+                    if ((data && data.count) > 0) {
+                        var container = document.createElement('div');
+                        container.className = 'mb-6 bg-red-50 border-l-4 border-red-400 p-4';
+                        container.innerHTML = ''+
+                          '<div class="flex">'+
+                            '<div class="flex-shrink-0">'+
+                              '<i class="fas fa-exclamation-triangle text-red-400"></i>'+
+                            '</div>'+
+                            '<div class="ml-3">'+
+                              '<p class="text-sm text-red-700">'+
+                                '<strong>Attenzione!</strong> I seguenti prodotti hanno scorte basse:'+
+                              '</p>'+
+                              '<ul class="mt-2 text-sm text-red-600"></ul>'+
+                            '</div>'+
+                          '</div>';
+                        var ul = container.querySelector('ul');
+                        (data.products || []).forEach(function(p){
+                            var li = document.createElement('li');
+                            var name = (p && p.name) ? String(p.name) : '';
+                            var sq = (p && typeof p.stock_quantity === 'number') ? p.stock_quantity : 0;
+                            var ms = (p && typeof p.min_stock_level === 'number') ? p.min_stock_level : 0;
+                            li.textContent = '• ' + name + ' (' + sq + '/' + ms + ')';
+                            ul.appendChild(li);
+                        });
+                        root.innerHTML = '';
+                        root.appendChild(container);
+                    } else {
+                        // Nessun prodotto con scorte basse: rimuovi alert
+                        root.innerHTML = '';
+                    }
+                } catch(e) {}
+            }
+            function fetchGlobalLowStock(){
+                var url = 'admin/index.php?route=admin&page=dashboard&ajax=low_stock';
+                try {
+                    fetch(url, { headers: { 'Accept': 'application/json' } })
+                      .then(function(res){ return res.json(); })
+                      .then(function(data){ renderGlobalLowStock(data); })
+                      .catch(function(){ /* silenzioso */ });
+                } catch(e) {}
+            }
+            document.addEventListener('DOMContentLoaded', function(){
+                fetchGlobalLowStock();
+                setInterval(fetchGlobalLowStock, 5000);
+            });
+        })();
+        </script>

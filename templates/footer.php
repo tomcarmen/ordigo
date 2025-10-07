@@ -13,7 +13,8 @@
                     <ul class="mt-3 space-y-2 text-sm">
                         <li><a class="hover:text-white" href="?route=home"><i class="fas fa-home mr-2"></i>Home</a></li>
                         <li><a class="hover:text-white" href="?route=admin&page=products"><i class="fas fa-cog mr-2"></i>Admin</a></li>
-<li><a class="hover:text-white" href="?route=admin&page=reports"><i class="fas fa-chart-bar mr-2"></i>Report</a></li>
+                        <li><a class="hover:text-white" href="orders.php"><i class="fas fa-clipboard-list mr-2"></i>Ordini</a></li>
+                        <li><a class="hover:text-white" href="?route=admin&page=reports"><i class="fas fa-chart-bar mr-2"></i>Report</a></li>
                     </ul>
                 </div>
                 <div>
@@ -26,9 +27,7 @@
             </div>
             <div class="mt-10 border-t border-gray-700 pt-6 flex items-center justify-between">
                 <p class="text-sm">&copy; 2024 OrdiGO. Tutti i diritti riservati.</p>
-                <div class="flex items-center space-x-4">
-                    <a href="<?= asset_path('admin/projector.php') ?>" target="_blank" class="inline-flex items-center text-sm px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white shadow-sm transition"><i class="fas fa-tv mr-2"></i>Dashboard Proiettore</a>
-                </div>
+                <div class="flex items-center space-x-4"></div>
             </div>
         </div>
     </footer>

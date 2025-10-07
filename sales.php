@@ -277,7 +277,7 @@ require_once __DIR__ . '/templates/header.php';
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M21 20l-5.8-5.8A7 7 0 1014.2 14.2L20 20zM4 10a6 6 0 1112 0 6 6 0 01-12 0z"/></svg>
       </div>
     </div>
-    <div class="ml-auto flex items-center gap-2 relative hidden">
+    <div class="ml-auto hidden items-center gap-2 relative">
       <!-- Badge totale articoli nel carrello (spostato a destra, più grande, bordino verde) -->
       <div class="absolute -top-7 -right-3 z-20" x-show="cartItemCount() > 0" x-transition.scale.origin.top>
         <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-white text-primary text-sm font-semibold shadow border-2 border-red-500" x-text="cartItemCount()"></span>
@@ -304,11 +304,11 @@ require_once __DIR__ . '/templates/header.php';
   </div>
 
   <!-- Griglia prodotti -->
-  <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5">
     <template x-for="p in filteredProducts()" :key="p.id">
-      <div class="group rounded-2xl bg-white shadow-sm ring-1 overflow-hidden hover:shadow-md transition duration-300" :class="isLowStock(p) ? 'ring-red-500' : 'ring-primary'">
-        <div class="relative">
-          <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-cover" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
+          <div class="group rounded-2xl bg-white shadow-sm ring-1 hover:shadow-md transition duration-300" :class="isLowStock(p) ? 'ring-red-500' : 'ring-primary'">
+        <div class="relative rounded-t-2xl overflow-hidden">
+          <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-cover rounded-t-2xl" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
           <div class="absolute bottom-3 right-3 z-10 inline-flex items-center px-4 py-2 rounded-lg bg-black/70 text-white text-base font-semibold shadow">
             <span x-text="formatCurrency(unitTotal(p))"></span>
           </div>
@@ -328,10 +328,14 @@ require_once __DIR__ . '/templates/header.php';
               <div class="text-xs text-gray-600 mb-1">Offerte Stock</div>
               <div class="flex flex-wrap gap-2.5">
                 <template x-for="of in p.offers" :key="of.id">
-                  <label class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded border cursor-pointer" :class="{'bg-gray-100': selectedOffer[p.id]===of.id}">
-                    <input type="radio" :name="'offer_'+p.id" :value="of.id" @change="selectedOffer[p.id]=of.id" :checked="selectedOffer[p.id]===of.id" />
-                    <span x-text="of.quantity + 'x ' + formatCurrency(of.offer_price)"></span>
-                  </label>
+                  <button type="button"
+                          @click="selectedOffer[p.id]===of.id ? selectedOffer[p.id]=null : selectedOffer[p.id]=of.id"
+                          :aria-pressed="selectedOffer[p.id]===of.id"
+                          class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded border cursor-pointer select-none transition"
+                          :class="selectedOffer[p.id]===of.id ? 'bg-amber-50 border-amber-300 ring-2 ring-primary' : 'bg-white border-gray-300 hover:bg-gray-50'">
+                    <span class="font-medium" x-text="of.quantity + 'x '"></span>
+                    <span x-text="formatCurrency(of.offer_price)"></span>
+                  </button>
                 </template>
               </div>
             </div>
@@ -358,15 +362,19 @@ require_once __DIR__ . '/templates/header.php';
             </div>
           </template>
 
-          <div class="mt-4 flex items-center gap-2.5">
-            <button @click="confirmAdd(p, $event)" :disabled="!canAddProduct(p) || (!selectedOffer[p.id] && getPendingSingles(p)===0)" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:bg-gray-300 text-white transition duration-200">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M11 4h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+          <div class="mt-4 flex flex-wrap sm:flex-nowrap items-stretch gap-1">
+            <button @click="confirmAdd(p, $event)" :disabled="!canAddProduct(p) || (((p.extras||[]).length>0 || (p.offers||[]).length>0) && getPendingSingles(p)===0)" class="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg bg-primary hover:bg-primary/90 disabled:bg-gray-300 text-white text-sm font-medium ring-1 ring-gray-300 shadow-sm leading-none transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11 4h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
               <span>Aggiungi</span>
             </button>
-            <div class="inline-flex items-center rounded-xl border overflow-hidden">
-              <button @click="decPendingSingles(p)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">-</button>
-              <div class="px-4 text-base min-w-[3rem] text-center" x-text="getPendingSingles(p)"></div>
-              <button @click="incPendingSingles(p)" class="h-10 w-10 bg-gray-50 hover:bg-gray-100 transition">+</button>
+            <div class="inline-flex items-center h-9 rounded-lg ring-1 ring-gray-300 bg-white shadow-sm w-full sm:w-auto justify-center overflow-hidden">
+              <button @click="decPendingSingles(p)" aria-label="Diminuisci" class="h-9 w-9 bg-red-50 hover:bg-red-100 transition-colors rounded-l-lg inline-flex items-center justify-center text-red-700">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+              </button>
+              <div class="px-3 text-sm min-w-[2.5rem] text-center border-x border-gray-200 leading-none" x-text="getPendingSingles(p)"></div>
+              <button @click="incPendingSingles(p)" aria-label="Aumenta" class="h-9 w-9 bg-green-50 hover:bg-green-100 transition-colors rounded-r-lg inline-flex items-center justify-center text-green-700">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
             </div>
           </div>
           
@@ -389,8 +397,10 @@ require_once __DIR__ . '/templates/header.php';
             </span>
           </button>
         </div>
-        <button @click="toggleCart()" class="rounded-md p-2 hover:bg-white/10 text-white">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <button @click="toggleCart()" class="rounded-md p-2 bg-red-600 hover:bg-red-700 text-white ring-1 ring-red-700/40" aria-label="Chiudi carrello">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
       <div class="flex-1 overflow-y-auto p-4 space-y-3">
@@ -517,14 +527,14 @@ require_once __DIR__ . '/templates/header.php';
   <!-- Modal checkout: Step 2 dettagli ordine -->
   <div class="fixed inset-0 z-[60]" x-cloak x-show="checkoutModalOpen" x-transition.opacity>
     <div class="absolute inset-0 bg-black/50" @click="checkoutModalOpen=false"></div>
-    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200">
-      <div class="p-4 border-b flex items-center justify-between">
+    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md sm:max-w-md max-w-full bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
+      <div class="p-3 sm:p-4 border-b flex items-center justify-between">
         <h3 class="font-bold text-lg">Dettagli pagamento</h3>
         <button @click="checkoutModalOpen=false" class="rounded-md p-2 hover:bg-gray-100" aria-label="Chiudi">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
-      <div class="p-4 space-y-3">
+      <div class="p-3 sm:p-4 space-y-3 overflow-auto">
         <div>
           <label class="text-sm text-gray-700">Numero comanda</label>
           <input type="number" inputmode="numeric" pattern="[0-9]*" min="1" x-model.number="orderNumber" x-ref="orderNumberInput" @input="orderNumberError=''" placeholder="Numero comanda (obbligatorio)" class="mt-1 w-full rounded border px-3 py-2 focus:outline-none" :class="orderNumberError ? 'border-red-500 ring-1 ring-red-300 focus:ring-red-300' : ''" :aria-invalid="orderNumberError ? 'true' : 'false'" />
@@ -536,23 +546,23 @@ require_once __DIR__ . '/templates/header.php';
         </div>
         <div>
           <label class="text-sm text-gray-700">Tipo di pagamento</label>
-          <div class="mt-1 flex items-center gap-2.5 text-sm">
-            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+          <div class="mt-1 flex flex-wrap items-center gap-2.5 text-sm">
+            <label class="min-w-0 inline-flex items-center gap-1.5 sm:gap-2 pl-2.5 sm:pl-3 pr-2.5 sm:pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md text-sm sm:text-sm"
                    :class="paymentMethod==='Contanti' ? 'bg-green-600 text-white shadow-sm ring-2 ring-green-300' : 'bg-green-50 text-green-700 ring-1 ring-green-200'">
               <input type="radio" class="sr-only" x-model="paymentMethod" value="Contanti" />
-              <i class="fas fa-money-bill-wave"></i>
+              <i class="fas fa-money-bill-wave text-[13px] sm:text-base"></i>
               <span>Contanti</span>
             </label>
-            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+            <label class="min-w-0 inline-flex items-center gap-1.5 sm:gap-2 pl-2.5 sm:pl-3 pr-2.5 sm:pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md text-sm sm:text-sm"
                    :class="paymentMethod==='Bancomat' ? 'bg-black text-white shadow-sm ring-2 ring-gray-400' : 'bg-gray-100 text-gray-800 ring-1 ring-gray-300'">
               <input type="radio" class="sr-only" x-model="paymentMethod" value="Bancomat" />
-              <i class="fas fa-credit-card"></i>
+              <i class="fas fa-credit-card text-[13px] sm:text-base"></i>
               <span>Bancomat</span>
             </label>
-            <label class="inline-flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md"
+            <label class="min-w-0 inline-flex items-center gap-1.5 sm:gap-2 pl-2.5 sm:pl-3 pr-2.5 sm:pr-3 py-1.5 rounded-full cursor-pointer transition transform hover:-translate-y-0.5 hover:shadow-md text-sm sm:text-sm"
                    :class="paymentMethod==='Satispay' ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-300' : 'bg-red-50 text-red-700 ring-1 ring-red-200'">
               <input type="radio" class="sr-only" x-model="paymentMethod" value="Satispay" />
-              <i class="fas fa-mobile-alt"></i>
+              <i class="fas fa-mobile-alt text-[13px] sm:text-base"></i>
               <span>Satispay</span>
             </label>
           </div>
@@ -950,16 +960,26 @@ function posApp(categories, products){
     confirmAdd(p, evt){
       const offerId = this.selectedOffer[p.id] || null;
       if (offerId){
-        // Se è selezionata un'offerta, aggiunge un pacchetto
-        this.addToCart(p, 1, evt, false);
+        // Se è selezionata un'offerta, usa il selettore come numero di pacchi
+        const qtyPacks = this.getPendingSingles(p);
+        if (qtyPacks > 0){
+          this.addToCart(p, qtyPacks, evt, false);
+          this.setPendingSingles(p, 0);
+        }
         return;
       }
       const qty = this.getPendingSingles(p);
       if (qty > 0){
-        // Aggiunge la quantità selezionata di singoli
+        // Nessuna offerta selezionata: aggiunge singoli secondo il selettore
         this.addToCart(p, qty, evt, true);
-        // Reset dopo l'aggiunta
         this.setPendingSingles(p, 0);
+        return;
+      }
+      const hasOptions = ((p.extras||[]).length > 0) || ((p.offers||[]).length > 0);
+      if (!hasOptions){
+        // Prodotto semplice: aggiunge +1 singolo quando qty non è impostato
+        this.addToCart(p, 1, evt, true);
+        return;
       }
     },
 

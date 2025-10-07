@@ -152,6 +152,16 @@ class Database {
             synced_at DATETIME
         );
 
+        -- Tabella spese generali (costi pre-evento)
+        CREATE TABLE IF NOT EXISTS general_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            description VARCHAR(200) NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            notes TEXT,
+            expense_date DATE DEFAULT CURRENT_DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
         -- Indici per performance
         CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
         CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
@@ -160,6 +170,7 @@ class Database {
         CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
         CREATE INDEX IF NOT EXISTS idx_sync_log_status ON sync_log(status);
         CREATE INDEX IF NOT EXISTS idx_product_offers_product ON product_offers(product_id);
+        CREATE INDEX IF NOT EXISTS idx_general_expenses_created ON general_expenses(created_at);
         ";
         
         $this->pdo->exec($sql);
@@ -318,6 +329,27 @@ class Database {
             try { $this->pdo->rollBack(); } catch (Exception $ee) {}
             $this->pdo->exec('PRAGMA foreign_keys = ON');
             error_log('Migrazione schema orders fallita: ' . $e->getMessage());
+        }
+
+        // Migrazione tabella general_expenses: aggiunge expense_date se mancante e backfill
+        try {
+            $stmt = $this->pdo->query("PRAGMA table_info(general_expenses)");
+            $columns = $stmt->fetchAll();
+            $colNames = array_map(function($c){ return $c['name']; }, $columns);
+            $hasExpenseDate = in_array('expense_date', $colNames);
+            if (!$hasExpenseDate) {
+                $this->pdo->exec("ALTER TABLE general_expenses ADD COLUMN expense_date DATE");
+                // Backfill: imposta expense_date = DATE(created_at)
+                try {
+                    $this->pdo->exec("UPDATE general_expenses SET expense_date = DATE(created_at) WHERE expense_date IS NULL");
+                } catch (Exception $e) {}
+                // Crea indice se non esiste
+                try {
+                    $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(expense_date)");
+                } catch (Exception $e) {}
+            }
+        } catch (Exception $e) {
+            error_log('Migrazione schema general_expenses fallita: ' . $e->getMessage());
         }
     }
     

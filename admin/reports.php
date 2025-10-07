@@ -27,6 +27,11 @@ $stmt = $db->query("
 ", [$date_from, $date_to]);
 $stats['sales'] = $stmt->fetch();
 
+// Spese generali (globali, non filtrate per periodo)
+$expenses_total = ($db->query("SELECT COALESCE(SUM(amount), 0) as total FROM general_expenses")->fetch()['total'] ?? 0);
+// Guadagno netto: ricavi del periodo meno spese generali
+$net_profit = ($stats['sales']['total_revenue'] ?? 0) - $expenses_total;
+
 // Prodotti più venduti
 $category_condition = $category_filter ? "AND p.category_id = ?" : "";
 $category_params = $category_filter ? [$date_from, $date_to, $category_filter] : [$date_from, $date_to];
@@ -273,6 +278,33 @@ $categories = $stmt->fetchAll();
                     <p class="text-sm font-medium text-gray-600">Scorte Basse</p>
                     <p class="text-2xl font-semibold text-gray-900"><?= count($low_stock) ?></p>
                     <p class="text-xs text-gray-500">prodotti</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spese e Guadagno Netto -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-minus-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Spese Generali</p>
+                    <p class="text-2xl font-semibold text-gray-900">€<?= number_format($expenses_total, 2) ?></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6 ring-1 ring-gray-100 hover:shadow-md transition">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-coins text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Guadagno Netto</p>
+                    <p class="text-2xl font-semibold text-gray-900">€<?= number_format($net_profit, 2) ?></p>
+                    <p class="text-xs text-gray-500">Ricavi periodo − Spese Generali</p>
                 </div>
             </div>
         </div>
