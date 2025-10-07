@@ -1,6 +1,11 @@
 # OrdiGO - Sistema di Gestione Ordini per Festa Oratorio
 
+[![Release v1.5.0](https://img.shields.io/badge/release-v1.5.0-blue)](https://github.com/tomcarmen/ordigo/releases/tag/v1.5.0)
+
+
 OrdiGO è un sistema web completo per la gestione degli ordini durante le feste dell'oratorio. Sviluppato in PHP con database SQLite, offre un'interfaccia moderna e intuitiva per gestire prodotti, categorie, ordini e generare report dettagliati.
+
+Link rapido: note di rilascio `1.5 (v1.5.0)` → https://github.com/tomcarmen/ordigo/releases/tag/v1.5.0
 
 ## 🚀 Caratteristiche Principali
 
