@@ -20,6 +20,27 @@ if (!function_exists('asset_path')) {
     }
 }
 
+// Helper server-side: costo minimo con offerte multiple (unbounded knapsack)
+if (!function_exists('min_cost_with_offers')) {
+    function min_cost_with_offers(int $qty, float $unit, array $offers): float {
+        if ($qty <= 0) return 0.0;
+        $dp = array_fill(0, $qty + 1, INF);
+        $dp[0] = 0.0;
+        for ($i = 1; $i <= $qty; $i++) {
+            $dp[$i] = $dp[$i - 1] + $unit;
+            foreach ($offers as $of) {
+                $k = isset($of['quantity']) ? (int)$of['quantity'] : (int)($of['qty'] ?? 0);
+                $price = isset($of['offer_price']) ? (float)$of['offer_price'] : (float)($of['price'] ?? 0);
+                if ($k > 0 && $k <= $i) {
+                    $cand = $dp[$i - $k] + $price;
+                    if ($cand < $dp[$i]) { $dp[$i] = $cand; }
+                }
+            }
+        }
+        return $dp[$qty];
+    }
+}
+
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
@@ -99,12 +120,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'checkout' && $_SERVER['REQUEST_ME
                 throw new Exception('Stock insufficiente per ' . $prod['name']);
             }
 
-            // Offerte bundle
+            // Offerte/bundle: calcolo migliore combinazione
             $offerId = isset($item['offer_id']) ? (int)$item['offer_id'] : 0;
             $bundleApplied = 0;
             $bundleQty = 0;
             $bundlePrice = 0.0;
             if ($offerId > 0) {
+                // Esplicita: applica logica pacchetti + remainder
                 $stmtOffer = $db->query("SELECT id, quantity, offer_price FROM product_offers WHERE id = ? AND product_id = ? AND active = 1", [$offerId, $pid]);
                 $offer = $stmtOffer->fetch();
                 if ($offer) {
@@ -114,10 +136,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'checkout' && $_SERVER['REQUEST_ME
                         $bundleApplied = intdiv($qty, $bundleQty);
                     }
                 }
+                $remainder = $bundleApplied > 0 ? ($qty - $bundleApplied * $bundleQty) : $qty;
+                $lineTotal = ($bundleApplied * $bundlePrice) + ($remainder * $unit);
+            } else {
+                // Nessuna offerta esplicita: cerca combinazione ottimale fra tutte le offerte attive
+                $offers = $db->query("SELECT quantity, offer_price FROM product_offers WHERE product_id = ? AND active = 1 ORDER BY quantity", [$pid])->fetchAll();
+                $lineTotal = min_cost_with_offers($qty, $unit, $offers);
             }
-
-            $remainder = $bundleApplied > 0 ? ($qty - $bundleApplied * $bundleQty) : $qty;
-            $lineTotal = ($bundleApplied * $bundlePrice) + ($remainder * $unit);
 
             // Extras
             $extrasPayload = isset($item['extras']) && is_array($item['extras']) ? $item['extras'] : [];
@@ -429,6 +454,23 @@ require_once __DIR__ . '/templates/header.php';
                             </template>
                             <span class="ml-2 px-1.5 rounded bg-gray-100 text-gray-700 text-[12px]" x-text="'x ' + packCount(item)"></span>
                           </div>
+                          <template x-if="itemOfferSegments(item)">
+                            <div class="mt-0.5 inline-flex items-center gap-1.5 flex-nowrap">
+                              <template x-for="pk in itemOfferSegments(item).packs" :key="pk.qty">
+                                <span class="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded" :class="badgeClassForQty(pk.qty)">
+                                  <span x-text="pk.count + 'x' + pk.qty"></span>
+                                </span>
+                              </template>
+                              <template x-if="itemOfferSegments(item).singles > 0">
+                                <span class="text-[9px] text-gray-600">+ <span x-text="itemOfferSegments(item).singles"></span> singoli</span>
+                              </template>
+                              <template x-if="itemOfferSegments(item).pricePartsText">
+                                <span class="inline-flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded bg-blue-100 text-blue-800 ml-2 whitespace-nowrap">
+                                  <span x-text="itemOfferSegments(item).pricePartsText"></span>
+                                </span>
+                              </template>
+                            </div>
+                          </template>
                           <template x-if="item.extras && item.extras.length>0">
                             <div class="mt-0.5 text-[12px] text-gray-600">
                               <template x-for="ex in item.extras" :key="ex.id">
@@ -472,12 +514,26 @@ require_once __DIR__ . '/templates/header.php';
                       <template x-if="item.offer_id">
                         <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800" x-text="offerLabel(item)"></span>
                       </template>
-                      <template x-if="!item.offer_id && (products.find(pp=>pp.id===item.id)?.offers?.length>0)">
-                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-primary text-white">Singolo</span>
-                      </template>
                     </div>
                     <span class="text-sm" x-text="formatCurrency(itemTotal(item))"></span>
                   </div>
+                  <template x-if="itemOfferSegments(item)">
+                    <div class="mt-1 inline-flex items-center gap-1.5 flex-nowrap">
+                      <template x-for="pk in itemOfferSegments(item).packs" :key="pk.qty">
+                        <span class="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded" :class="badgeClassForQty(pk.qty)">
+                          <span x-text="pk.count + 'x' + pk.qty"></span>
+                        </span>
+                      </template>
+                      <template x-if="itemOfferSegments(item).singles > 0">
+                        <span class="text-[9px] text-gray-600">+ <span x-text="itemOfferSegments(item).singles"></span> singoli</span>
+                      </template>
+                      <template x-if="itemOfferSegments(item).pricePartsText">
+                        <span class="inline-flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded bg-blue-100 text-blue-800 ml-2 whitespace-nowrap">
+                          <span x-text="itemOfferSegments(item).pricePartsText"></span>
+                        </span>
+                      </template>
+                    </div>
+                  </template>
                   <template x-if="item.extras && item.extras.length>0">
                     <div class="mt-1 text-xs text-gray-600">
                       <template x-for="ex in item.extras" :key="ex.id">
@@ -511,6 +567,7 @@ require_once __DIR__ . '/templates/header.php';
           <span class="text-gray-600">Totale</span>
           <span class="font-bold" x-text="formatCurrency(cartTotal())"></span>
         </div>
+        <!-- Riepilogo sotto al totale rimosso: le combinazioni sono mostrate per voce del carrello -->
         <div class="flex items-center gap-3">
           <button @click="openCheckoutModal()" :disabled="cart.length===0" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white transition">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 12h14v2H5zm0-4h14v2H5zm0 8h14v2H5z"/></svg>
@@ -525,9 +582,9 @@ require_once __DIR__ . '/templates/header.php';
     </div>
   </div>
   <!-- Modal checkout: Step 2 dettagli ordine -->
-  <div class="fixed inset-0 z-[60]" x-cloak x-show="checkoutModalOpen" x-transition.opacity>
+  <div class="fixed inset-0 z-[60] flex items-center justify-center" x-cloak x-show="checkoutModalOpen" x-transition.opacity>
     <div class="absolute inset-0 bg-black/50" @click="checkoutModalOpen=false"></div>
-    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md sm:max-w-md max-w-full bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
+    <div class="relative w-[92%] max-w-md sm:max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
       <div class="p-3 sm:p-4 border-b flex items-center justify-between">
         <h3 class="font-bold text-lg">Dettagli pagamento</h3>
         <button @click="checkoutModalOpen=false" class="rounded-md p-2 hover:bg-gray-100" aria-label="Chiudi">
@@ -572,6 +629,7 @@ require_once __DIR__ . '/templates/header.php';
           <span class="text-gray-600">Totale</span>
           <span class="font-bold" x-text="formatCurrency(cartTotal())"></span>
         </div>
+        <!-- Breakdown (packs/singoli) rimosso nel modal: si mostra solo il totale -->
         <div class="flex items-center justify-end gap-2 pt-1">
           <button @click="checkoutModalOpen=false" class="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Annulla</button>
           <button @click="checkout()" :disabled="!paymentMethod" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:text-gray-600">
@@ -670,6 +728,23 @@ function posApp(categories, products){
       return s > 0 ? `${s}` : 'Esaurito';
     },
 
+    stockBadgeClass(p){
+      const s = typeof p.stock_quantity === 'number' ? p.stock_quantity : null;
+      const m = typeof p.min_stock_level === 'number' ? p.min_stock_level : null;
+      if (s === null) return 'bg-gray-300 text-gray-800';
+      if (s === 0) return 'bg-red-600 text-white';
+      if (m !== null && s <= m) return 'bg-yellow-500 text-white';
+      return 'bg-emerald-600 text-white';
+    },
+
+    // Solo per prodotti "arrosticini" i singoli compaiono nel riepilogo sotto al totale
+    shouldShowSingles(p){
+      try {
+        const name = String((p && p.name) || '').toLowerCase();
+        return name.includes('arrosticini');
+      } catch(e){ return false; }
+    },
+
     canAddProduct(p){
       const s = typeof p.stock_quantity === 'number' ? p.stock_quantity : null;
       return s === null ? true : s > 0;
@@ -706,6 +781,245 @@ function posApp(categories, products){
       const v = o && (o.offer_price ?? o.price);
       const n = Number(v || 0);
       return Number.isFinite(n) && n >= 0 ? n : 0;
+    },
+
+    // DP client-side: costo minimo con offerte multiple (unbounded knapsack)
+    minCostWithOffers(qty, unit, offers){
+      const n = Math.max(0, Number(qty || 0));
+      const u = Number(unit || 0);
+      const list = Array.isArray(offers) ? offers : [];
+      if (n === 0) return 0;
+      const dp = new Array(n + 1).fill(Infinity);
+      dp[0] = 0;
+      for (let i = 1; i <= n; i++) {
+        dp[i] = dp[i - 1] + u;
+        for (const ofr of list) {
+          const k = Number((ofr && (ofr.quantity ?? ofr.qty)) || 0);
+          const price = Number((ofr && (ofr.offer_price ?? ofr.price)) || 0);
+          if (Number.isFinite(k) && k > 0 && k <= i) {
+            const cand = dp[i - k] + price;
+            if (cand < dp[i]) dp[i] = cand;
+          }
+        }
+      }
+      return dp[n];
+    },
+
+    // DP client-side: calcola combinazione ottimale e breakdown delle offerte
+    bestOfferBreakdown(qty, unit, offers){
+      const n = Math.max(0, Number(qty || 0));
+      const u = Number(unit || 0);
+      const list = Array.isArray(offers) ? offers : [];
+      if (n === 0) return { total: 0, counts: new Map([[1,0]]) };
+      const dp = new Array(n + 1).fill(Infinity);
+      const prev = new Array(n + 1).fill(null);
+      dp[0] = 0;
+      for (let i = 1; i <= n; i++) {
+        // opzione singolo
+        dp[i] = dp[i - 1] + u;
+        prev[i] = 1;
+        // prova tutte le offerte
+        for (const ofr of list) {
+          const k = Number((ofr && (ofr.quantity ?? ofr.qty)) || 0);
+          const price = Number((ofr && (ofr.offer_price ?? ofr.price)) || 0);
+          if (Number.isFinite(k) && k > 0 && k <= i) {
+            const cand = dp[i - k] + price;
+            // preferisci costo minore; in caso di parità, pacchetto più grande
+            if ((cand + 1e-9) < dp[i] || (Math.abs(cand - dp[i]) < 1e-9 && k > (prev[i] || 1))) {
+              dp[i] = cand;
+              prev[i] = k;
+            }
+          }
+        }
+      }
+      // ricostruisci conteggi
+      const counts = new Map();
+      let i = n;
+      while (i > 0) {
+        const k = prev[i] || 1;
+        counts.set(k, (counts.get(k) || 0) + 1);
+        i -= k;
+      }
+      return { total: dp[n], counts };
+    },
+
+    // Etichetta breakdown automatica delle offerte per item singoli
+    autoOfferBreakdown(item){
+      try {
+        if (!item) return '';
+        const qty = Math.max(0, Number(item.quantity || 0));
+        const p = this.products.find(pp => pp.id === item.id);
+        if (!p) return '';
+        const offers = Array.isArray(p.offers) ? p.offers : [];
+        if (offers.length === 0 || qty === 0) return 'Singoli';
+        const { total, counts } = this.bestOfferBreakdown(qty, p.price, offers);
+        const parts = [];
+        // ordina per quantità decrescente, escludi i singoli (1)
+        const ks = Array.from(counts.keys()).filter(k => k !== 1).sort((a,b) => b - a);
+        for (const k of ks) {
+          const c = counts.get(k) || 0;
+          if (c > 0) parts.push(`${c}x${k}`);
+        }
+        const singles = counts.get(1) || 0;
+        if (singles > 0) parts.push(`${singles} singoli`);
+        const combo = parts.length > 0 ? parts.join(' + ') : `${qty} singoli`;
+        return `Auto: ${combo} (${this.formatCurrency(total)})`;
+      } catch(e){ return ''; }
+    },
+
+    // Riepilogo breakdown complessivo sotto il totale carrello
+    cartOfferSummaryLabel(){
+      try {
+        if (!Array.isArray(this.cart) || this.cart.length === 0) return '';
+        const segments = [];
+        for (const item of this.cart){
+          const qty = Math.max(0, Number(item.quantity || 0));
+          if (qty === 0) continue;
+          const p = this.products.find(pp => pp.id === item.id);
+          const name = p ? (p.name || item.name || 'Prodotto') : (item.name || 'Prodotto');
+          const offers = p && Array.isArray(p.offers) ? p.offers : [];
+          let counts;
+          if (item.offer_id) {
+            const packQty = this.getOfferQty(item.id, item.offer_id);
+            const packs = Math.floor(qty / packQty);
+            const remainder = qty % packQty;
+            counts = new Map();
+            if (packs > 0) counts.set(packQty, packs);
+            if (remainder > 0) counts.set(1, remainder);
+          } else if (offers.length > 0) {
+            counts = this.bestOfferBreakdown(qty, p.price, offers).counts;
+          } else {
+            counts = new Map([[1, qty]]);
+          }
+          const parts = [];
+          const ks = Array.from(counts.keys()).filter(k => k !== 1).sort((a,b)=> b - a);
+          for (const k of ks) {
+            const c = counts.get(k) || 0;
+            if (c > 0) parts.push(`${c}x${k}`);
+          }
+          const singles = counts.get(1) || 0;
+          if (singles > 0) parts.push(`${singles} singoli`);
+          if (parts.length > 0) segments.push(`${name}: ${parts.join(', ')}`);
+        }
+        if (segments.length === 0) return '';
+        return `Combinazioni applicate: ${segments.join('; ')}`;
+      } catch(e){ return ''; }
+    },
+
+    // Classe colore per badge in base alla quantità del pacchetto
+    badgeClassForQty(q){
+      const n = Math.max(1, Number(q || 1));
+      if (n === 10) return 'bg-indigo-600 text-white';
+      if (n === 6) return 'bg-purple-600 text-white';
+      if (n >= 4) return 'bg-blue-600 text-white';
+      if (n >= 3) return 'bg-green-600 text-white';
+      return 'bg-primary text-white';
+    },
+
+    // Segmenti per riepilogo a badge sotto al totale
+    cartOfferSummarySegments(){
+      try {
+        const out = [];
+        if (!Array.isArray(this.cart) || this.cart.length === 0) return out;
+        for (const item of this.cart){
+          const qty = Math.max(0, Number(item.quantity || 0));
+          if (qty === 0) continue;
+          const p = this.products.find(pp => pp.id === item.id);
+          if (!p) continue;
+          const offers = Array.isArray(p.offers) ? p.offers : [];
+          let counts;
+          if (item.offer_id) {
+            const packQty = this.getOfferQty(item.id, item.offer_id);
+            const packs = Math.floor(qty / packQty);
+            const remainder = qty % packQty;
+            counts = new Map();
+            if (packs > 0) counts.set(packQty, packs);
+            if (remainder > 0) counts.set(1, remainder);
+          } else if (offers.length > 0) {
+            counts = this.bestOfferBreakdown(qty, p.price, offers).counts;
+          } else {
+            counts = new Map([[1, qty]]);
+          }
+          const packs = [];
+          const ks = Array.from(counts.keys()).filter(k => k !== 1).sort((a,b)=> b - a);
+          for (const k of ks) {
+            const c = counts.get(k) || 0;
+            if (c > 0) packs.push({ qty: k, count: c });
+          }
+          const singles = counts.get(1) || 0;
+          const stockTracked = (typeof p.stock_quantity === 'number');
+          const showSingles = stockTracked && singles > 0 && this.shouldShowSingles(p);
+          if (stockTracked && (packs.length > 0 || showSingles)) {
+            out.push({ id: p.id, name: p.name, packs, singles: showSingles ? singles : 0, stockClass: this.stockBadgeClass(p) });
+          }
+        }
+        return out;
+      } catch(e){ return []; }
+    },
+
+    // Segmenti per combinazioni a livello di singolo item nel carrello
+    itemOfferSegments(item){
+      try {
+        const qty = Math.max(0, Number(item && item.quantity || 0));
+        if (qty === 0) return null;
+        const p = this.products.find(pp => pp.id === item.id);
+        if (!p) return null;
+        const stockTracked = (typeof p.stock_quantity === 'number');
+        const offers = Array.isArray(p.offers) ? p.offers : [];
+        let counts;
+        let total;
+        let priceParts = [];
+        if (item.offer_id) {
+          const packQty = this.getOfferQty(item.id, item.offer_id);
+          const packPrice = this.getOfferPrice(item.id, item.offer_id);
+          const packs = Math.floor(qty / packQty);
+          const remainder = qty % packQty;
+          counts = new Map();
+          if (packs > 0) counts.set(packQty, packs);
+          if (remainder > 0) counts.set(1, remainder);
+          total = (packs * (packPrice || 0)) + (remainder * (p.price || 0));
+          if (packs > 0) priceParts.push(packs * (packPrice || 0));
+          const showSinglesPart = remainder > 0 && (stockTracked && this.shouldShowSingles(p));
+          if (showSinglesPart) priceParts.push(remainder * (p.price || 0));
+        } else if (offers.length > 0) {
+          const br = this.bestOfferBreakdown(qty, p.price, offers);
+          counts = br.counts;
+          total = br.total;
+          // costruisci i pezzi di prezzo: per ogni k>1 usa prezzo offerta; per k=1 usa unitario
+          const ksAll = Array.from(counts.keys()).sort((a,b)=> b - a);
+          for (const k of ksAll) {
+            const c = counts.get(k) || 0;
+            if (c <= 0) continue;
+            if (k === 1) {
+              const showSinglesPart = stockTracked && this.shouldShowSingles(p);
+              if (showSinglesPart) priceParts.push(c * (p.price || 0));
+            } else {
+              const ofr = (offers || []).find(of => Number((of.quantity ?? of.qty) || 0) === Number(k));
+              const op = Number((ofr && (ofr.offer_price ?? ofr.price)) || 0);
+              priceParts.push(c * op);
+            }
+          }
+        } else {
+          counts = new Map([[1, qty]]);
+          total = qty * (p.price || 0);
+          const showSinglesPart = stockTracked && this.shouldShowSingles(p);
+          if (showSinglesPart) priceParts.push(qty * (p.price || 0));
+        }
+        const packs = [];
+        const ks = Array.from(counts.keys()).filter(k => k !== 1).sort((a,b)=> b - a);
+        for (const k of ks) {
+          const c = counts.get(k) || 0;
+          if (c > 0) packs.push({ qty: k, count: c });
+        }
+        const singles = counts.get(1) || 0;
+        const showSingles = stockTracked && singles > 0 && this.shouldShowSingles(p);
+        // Etichetta unica solo con somma dei pezzi di prezzo (es. "€ 5,00 + € 3,00")
+        const pricePartsText = (priceParts.length > 0) ? priceParts.map(v => this.formatCurrency(v)).join(' + ') : '';
+        if (stockTracked && (packs.length > 0 || showSingles)) {
+          return { packs, singles: showSingles ? singles : 0, stockClass: this.stockBadgeClass(p), pricePartsText };
+        }
+        return null;
+      } catch(e){ return null; }
     },
 
     // Gestione pacchetti (stock) quando è selezionata un'offerta
@@ -898,14 +1212,17 @@ function posApp(categories, products){
       return this.cart.reduce((sum, i) => {
         const qty = i.quantity || 0;
         let base = 0;
-        if (i.offer_id) {
+        if (i.offer_id) { /* esplicita: calcolo standard */
           const packQty = this.getOfferQty(i.id, i.offer_id);
           const packPrice = this.getOfferPrice(i.id, i.offer_id);
           const packs = Math.floor(qty / packQty);
           const remainder = qty % packQty;
           base = (packs * packPrice) + (remainder * i.price);
         } else {
-          base = i.price * qty;
+          /* singoli: calcolo ottimale combinando tutte le offerte attive */
+          const p = this.products.find(pp => pp.id === i.id);
+          const offers = (p && Array.isArray(p.offers)) ? p.offers : [];
+          base = offers.length > 0 ? this.minCostWithOffers(qty, i.price, offers) : (i.price * qty);
         }
         const extras = (i.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * qty), 0);
         return sum + base + extras;
@@ -922,7 +1239,10 @@ function posApp(categories, products){
         const remainder = qty % packQty;
         base = (packs * packPrice) + (remainder * i.price);
       } else {
-        base = i.price * qty;
+        /* singoli: calcolo ottimale combinando tutte le offerte attive */
+        const p = this.products.find(pp => pp.id === i.id);
+        const offers = (p && Array.isArray(p.offers)) ? p.offers : [];
+        base = offers.length > 0 ? this.minCostWithOffers(qty, i.price, offers) : (i.price * qty);
       }
       const extras = (i.extras||[]).reduce((s,e)=> s + (e.price * (e.quantity||1) * qty), 0);
       return base + extras;

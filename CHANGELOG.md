@@ -2,6 +2,21 @@
 
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
+## UI vendite (v1.6.0)
+- Badge prezzi più compatti e sempre su una riga:
+  - Resa la riga non avvolgente con `flex-nowrap` e `whitespace-nowrap`.
+  - Compattazione badge prezzi: font ridotto (`text-[9px]`), padding (`px-1`), gap interno (`gap-0.5`), margine (`ml-2`).
+- Colori dei badge pacchetti basati sulla quantità (`badgeClassForQty`):
+  - `10` → indaco; `6` → viola; `>=4` → blu; `>=3` → verde; altrimenti colore primario.
+- Riduzione del testo dei badge stock e del testo “+ N singoli” a `text-[9px]` per massima compattezza.
+- Modal pagamento (“Dettagli pagamento”): rimosso il breakdown sotto il totale (niente `2x10`, `1x6`, `+ N singoli`).
+- Modalità “Dettagli” nel carrello: ripristinata la visualizzazione del breakdown sotto ogni voce (`2x10`, `1x6`, `+ N singoli`) insieme al badge prezzi compatto.
+
+Note tecniche:
+- File toccati: `sales.php` (markup Alpine e funzioni di supporto).
+- Funzioni interessate: `itemOfferSegments`, `badgeClassForQty` (regole colore aggiornate).
+- Nessuna modifica al database.
+
 ## UI tabellone e modali spese (v1.5.0)
 - Tabellone "In preparazione": formattazione testo migliorata con due spazi fissi dopo i due punti e tra numero comanda e nome cliente; sfondo evidenziato in giallo intenso (`#f9d71c`) e numero comanda in rosso (`#dc2626`) per maggiore visibilità.
 - Spese generali: pagina semplificata mostrando solo il bottone "Aggiungi Spesa"; inserimento e modifica ora tramite finestre modali con precompilazione automatica per la modifica.
