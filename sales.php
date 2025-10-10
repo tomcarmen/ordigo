@@ -338,8 +338,8 @@ require_once __DIR__ . '/templates/header.php';
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5">
     <template x-for="p in filteredProducts()" :key="p.id">
           <div class="group rounded-2xl bg-white shadow-sm ring-1 hover:shadow-md transition duration-300" :class="isLowStock(p) ? 'ring-red-500' : 'ring-primary'">
-        <div class="relative rounded-t-2xl overflow-hidden">
-          <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-cover rounded-t-2xl" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
+        <div class="relative rounded-t-2xl overflow-hidden flex items-center justify-center bg-white">
+          <img :src="productImage(p)" :alt="p.name" class="h-48 w-full object-contain rounded-t-2xl" loading="lazy" onerror="this.onerror=null;this.src='<?= asset_path('icons/icon-192x192.svg') ?>';" />
           <div class="absolute bottom-3 right-3 z-10 inline-flex items-center px-4 py-2 rounded-lg bg-black/70 text-white text-base font-semibold shadow">
             <span x-text="formatCurrency(unitTotal(p))"></span>
           </div>

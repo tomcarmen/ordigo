@@ -1,5 +1,14 @@
 # OrdiGO POS – Changelog modifiche recenti
 
+## Uniformità immagini vendite (v1.7.1)
+- Pagina `sales.php`: uniformate le immagini nelle card dei prodotti per evitare il taglio.
+- Le immagini ora usano `object-contain` e sono centrate nel contenitore (`flex items-center justify-center`) mantenendo un'altezza uniforme (`h-48`).
+- Effetto: niente crop, proporzioni rispettate; eventuali bordi neutri al posto del ritaglio.
+
+Note tecniche:
+- File toccati: `sales.php` (classi dell'immagine e del contenitore).
+- Nessuna modifica al database.
+
 Questa sezione descrive le modifiche applicate per risolvere problemi di stock degli extras e migliorare l’esperienza d’uso nella pagina vendite (`sales.php`).
 
 ## UI vendite (v1.6.0)
