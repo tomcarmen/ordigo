@@ -268,6 +268,11 @@ require_once __DIR__ . '/templates/header.php';
           <button @click="sortDir='desc'" :class="chipClass(sortDir==='desc')" class="inline-flex items-center px-3 py-1 rounded border border-primary"><i class="fas fa-sort-alpha-up mr-1"></i>Z→A</button>
         </div>
         <div class="flex items-center gap-1 sm:ml-2">
+          <span class="text-sm text-gray-700 mr-1">Ordina per:</span>
+          <button @click="sortBy='number'" :class="chipClass(sortBy==='number')" class="inline-flex items-center px-3 py-1 rounded border border-primary"><i class="fas fa-hashtag mr-1"></i>Numero</button>
+          <button @click="sortBy='created'" :class="chipClass(sortBy==='created')" class="inline-flex items-center px-3 py-1 rounded border border-primary"><i class="fas fa-clock mr-1"></i>Inserimento</button>
+        </div>
+        <div class="flex items-center gap-1 sm:ml-2">
           <button @click="viewMode='card'" :class="chipClass(viewMode==='card')" class="inline-flex items-center px-3 py-1 rounded border border-primary"><i class="fas fa-th mr-1"></i>Card</button>
           <button @click="viewMode='row'" :class="chipClass(viewMode==='row')" class="inline-flex items-center px-3 py-1 rounded border border-primary"><i class="fas fa-list mr-1"></i>Riga</button>
         </div>
@@ -606,6 +611,7 @@ require_once __DIR__ . '/templates/header.php';
         completed: initialCompleted || [],
         active: 'all',
         searchOrder: '',
+        sortBy: 'number',
         sortDir: 'asc',
         viewMode: 'card',
         tick: Date.now(),
@@ -709,6 +715,11 @@ require_once __DIR__ . '/templates/header.php';
           const q = String(this.searchOrder || '').trim();
           if (q) { list = list.filter(o => String(o.order_number || '').startsWith(q)); }
           list = list.slice().sort((a,b) => {
+            if (this.sortBy === 'created') {
+              const ta = Date.parse(a.created_at || '') || 0;
+              const tb = Date.parse(b.created_at || '') || 0;
+              return this.sortDir === 'asc' ? (ta - tb) : (tb - ta);
+            }
             const A = String(a.order_number||'');
             const B = String(b.order_number||'');
             return this.sortDir==='asc' ? A.localeCompare(B, undefined, {numeric:true}) : B.localeCompare(A, undefined, {numeric:true});

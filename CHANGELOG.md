@@ -109,3 +109,12 @@ Note tecniche:
 ## Versione
 - Data modifica: 2025-10-06
 - Autore: Team OrdiGO
+## Ordinamento ordini e badge Esaurito (v1.7.0)
+- Pagina `orders.php`: aggiunto selettore "Ordina per" con opzioni Numero e Inserimento (data di creazione). La logica JS adesso ordina anche per `created_at` quando selezionato.
+- Pagina `sales.php`: rimosso il badge celeste sovrapposto "Esaurito" nelle card prodotto; resta solo l'indicatore rosso basato su `stockLabel(p)` quando la scorta è zero.
+- Checkout: normalizzazione del nome cliente in maiuscolo lato server con `mb_strtoupper`.
+
+Note tecniche:
+- File toccati: `orders.php`, `sales.php`.
+- UI: nuovi chip di ordinamento con `chipClass`; sorting per data basato su `created_at`.
+- Server: uppercasing di `customer_name` prima dell'insert.

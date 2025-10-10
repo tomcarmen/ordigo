@@ -71,6 +71,12 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'checkout' && $_SERVER['REQUEST_ME
         echo json_encode(['ok' => false, 'error' => 'Nome cliente obbligatorio']);
         exit;
     }
+    // Normalizza il nome cliente in maiuscolo per il salvataggio
+    if (function_exists('mb_strtoupper')) {
+        $customerName = mb_strtoupper($customerName, 'UTF-8');
+    } else {
+        $customerName = strtoupper($customerName);
+    }
     $paymentMethod = isset($payload['payment_method']) ? trim($payload['payment_method']) : '';
     $notes = isset($payload['notes']) ? trim($payload['notes']) : null;
     $items = $payload['items'];
@@ -340,9 +346,6 @@ require_once __DIR__ . '/templates/header.php';
           <div class="absolute top-3 right-3 inline-flex items-center gap-2">
             <span class="px-4 py-2 rounded-xl text-lg font-semibold" :class="isLowStock(p) ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'" x-text="stockLabel(p)"></span>
           </div>
-          <template x-if="!canAddProduct(p)">
-            <span class="absolute inset-x-0 top-0 m-2 inline-flex items-center justify-center px-2 py-1 rounded-md bg-primary/90 text-white text-xs font-semibold shadow">Esaurito</span>
-          </template>
         </div>
         <div class="p-5">
           <h3 class="font-semibold text-base line-clamp-2" x-text="p.name"></h3>

@@ -3,7 +3,7 @@ require_once 'config/database.php';
 
 $db = getDB();
 
-// Statistiche per la home
+// Statistiche per la home (opzionali, pronte per futuri widget)
 $stats = [
     'total_products' => $db->query("SELECT COUNT(*) as count FROM products WHERE active = 1")->fetch()['count'],
     'total_categories' => $db->query("SELECT COUNT(*) as count FROM categories WHERE active = 1")->fetch()['count'],
@@ -11,82 +11,130 @@ $stats = [
     'pending_orders' => $db->query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'")->fetch()['count']
 ];
 
-// Prodotti più venduti (simulato per ora)
-$popularProducts = $db->query("
-    SELECT p.*, c.name as category_name, c.color as category_color
-    FROM products p 
-    LEFT JOIN categories c ON p.category_id = c.id 
-    WHERE p.active = 1 
-    ORDER BY p.name 
-    LIMIT 6
-")->fetchAll();
-
-// Aggiunte (extras) per i prodotti mostrati
-$extrasByProduct = [];
-foreach ($popularProducts as $pp) {
-    $pid = $pp['id'];
-    $extrasByProduct[$pid] = $db->query(
-        "SELECT name, selling_price, purchase_price, stock_quantity, min_stock_level FROM product_extras WHERE product_id = ? AND active = 1 ORDER BY name",
-        [$pid]
-    )->fetchAll();
-}
-
-// Ordini recenti
-$recentOrders = $db->query("
-    SELECT * FROM orders 
-    WHERE DATE(created_at) = DATE('now')
-    ORDER BY created_at DESC 
-    LIMIT 5
-")->fetchAll();
 ?>
 
 <div class="min-h-screen bg-gray-50">
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div class="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h1 class="text-4xl font-extrabold sm:text-5xl md:text-6xl">
-                    <span class="block">ÒrdiGO</span>
-                    <span class="block text-blue-200 text-2xl sm:text-3xl mt-2">Sistema di Gestione Ordini</span>
-                </h1>
-                <p class="mt-6 max-w-2xl mx-auto text-xl text-blue-100">
-                    Gestisci facilmente gli ordini della tua Festa Oratorio con un sistema moderno, veloce e completamente offline.
-                </p>
-                <div class="mt-8 flex justify-center space-x-4">
-                    <a href="?route=admin" class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg shadow-lg transition-colors">
-                        <i class="fas fa-cog mr-2"></i>Pannello Admin
-                    </a>
-                    <a href="#ordini" class="bg-blue-500 hover:bg-blue-400 text-white px-8 py-3 rounded-lg font-semibold text-lg shadow-lg transition-colors">
-                        <i class="fas fa-shopping-cart mr-2"></i>Nuovo Ordine
-                    </a>
-                </div>
-            </div>
-        </div>
-</div>
-
     
 
+    <!-- Collegamenti rapidi -->
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Collegamenti Rapidi</h2>
+            <p class="text-gray-600">Accedi in un clic alle sezioni principali.</p>
+        </div>
 
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Vendite -->
+            <a href="<?= asset_path('sales.php') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-500 text-white rounded-md flex items-center justify-center"><i class="fas fa-shopping-cart"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Vendite</p>
+                            <p class="text-base font-medium text-gray-900">Cassa e checkout</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
+            <!-- Ordini -->
+            <a href="<?= asset_path('orders.php') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600 text-white rounded-md flex items-center justify-center"><i class="fas fa-clipboard-list"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Ordini</p>
+                            <p class="text-base font-medium text-gray-900">Gestione e stato</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
+            <!-- Tabellone -->
+            <a href="<?= asset_path('tabellone.php') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-yellow-500 text-white rounded-md flex items-center justify-center"><i class="fas fa-tv"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Tabellone</p>
+                            <p class="text-base font-medium text-gray-900">Schermo ordini pronti</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
-        
+            <!-- Admin Dashboard -->
+            <a href="<?= asset_path('index.php?route=admin&page=dashboard') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-800 text-white rounded-md flex items-center justify-center"><i class="fas fa-chart-line"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Admin</p>
+                            <p class="text-base font-medium text-gray-900">Dashboard</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
+            <!-- Prodotti -->
+            <a href="<?= asset_path('index.php?route=admin&page=products') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-600 text-white rounded-md flex items-center justify-center"><i class="fas fa-box"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Admin</p>
+                            <p class="text-base font-medium text-gray-900">Prodotti</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
+            <!-- Categorie -->
+            <a href="<?= asset_path('index.php?route=admin&page=categories') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-600 text-white rounded-md flex items-center justify-center"><i class="fas fa-tags"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Admin</p>
+                            <p class="text-base font-medium text-gray-900">Categorie</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
-    </div>
-</div>
+            <!-- Report -->
+            <a href="<?= asset_path('index.php?route=admin&page=reports') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-700 text-white rounded-md flex items-center justify-center"><i class="fas fa-chart-bar"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Admin</p>
+                            <p class="text-base font-medium text-gray-900">Report</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
 
-<!-- Sezione Nuovo Ordine (placeholder) -->
-<div id="ordini" class="bg-gray-100 py-16">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">Sistema Ordini</h2>
-        <p class="text-xl text-gray-600 mb-8">Il sistema di gestione ordini sarà implementato nelle prossime fasi dello sviluppo.</p>
-        <div class="bg-white rounded-lg shadow-lg p-8">
-            <i class="fas fa-tools text-6xl text-blue-500 mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">In Sviluppo</h3>
-            <p class="text-gray-600">Questa funzionalità sarà disponibile presto. Per ora puoi gestire prodotti e categorie dal pannello amministrativo.</p>
+            <!-- Spese Generali -->
+            <a href="<?= asset_path('index.php?route=admin&page=general_expenses') ?>" class="block bg-white rounded-lg shadow p-5 ring-1 ring-gray-100 hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-600 text-white rounded-md flex items-center justify-center"><i class="fas fa-receipt"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-600">Admin</p>
+                            <p class="text-base font-medium text-gray-900">Spese Generali</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+            </a>
         </div>
     </div>
 </div>
