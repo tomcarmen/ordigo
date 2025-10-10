@@ -1288,6 +1288,8 @@ function posApp(categories, products){
         if (qtyPacks > 0){
           this.addToCart(p, qtyPacks, evt, false);
           this.setPendingSingles(p, 0);
+          // Dopo l'aggiunta, azzera anche la selezione delle aggiunte (extras)
+          this.selectedExtras[p.id] = [];
         }
         return;
       }
@@ -1296,6 +1298,8 @@ function posApp(categories, products){
         // Nessuna offerta selezionata: aggiunge singoli secondo il selettore
         this.addToCart(p, qty, evt, true);
         this.setPendingSingles(p, 0);
+        // Dopo l'aggiunta, azzera anche la selezione delle aggiunte (extras)
+        this.selectedExtras[p.id] = [];
         return;
       }
       const hasOptions = ((p.extras||[]).length > 0) || ((p.offers||[]).length > 0);
